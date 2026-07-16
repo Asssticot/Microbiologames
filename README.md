@@ -4,7 +4,7 @@
 Une petite collection de mini-jeux arcade sur le thème de la microbiologie,
 jouables directement dans le navigateur.
 
-**▶ Jouer en ligne : https://asssticot.github.io/Microbiologames/**
+**▶ Jouer en ligne : https://microbiologames.github.io/Microbiologames/**
 
 ---
 
