@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Microbio Paint — bac à sable pixel-art de microbiologie prévisionnelle</title>
+<style>
+  :root{
+    /* Charte graphique ADRIA */
+    --noir:#000000; --nuit:#0a0d0e; --nuit2:#10151a; --nuit3:#161d24;
+    --glaz:#00A9B2; --glazD:#00666c; --glazL:#5fd0d8;
+    --azur:#DEF0F3; --jaune:#FFDD00; --jauneD:#c9a500; --topaze:#FFF4BD;
+    --gris:#C4C4C4; --grisD:#8a8a8a; --ligne:#1c2831;
+    /* couleurs espèces (conservées de la base de données) */
+    --listeria:#60a5fa; --salmonella:#fb923c;
+    --font:"Carlito","Calibri","Segoe UI",system-ui,sans-serif;
+    --mono:"Consolas","SFMono-Regular","Courier New",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    background:var(--noir);color:var(--azur);font-family:var(--font);font-size:13px;line-height:1.4;
+    display:flex;flex-direction:column;height:100vh;overflow:hidden;
+  }
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges;}
+
+  /* ---------- HEADER ---------- */
+  header{
+    flex:0 0 auto;padding:12px 20px;border-bottom:1px solid var(--ligne);
+    display:flex;align-items:center;gap:20px;background:linear-gradient(180deg,#05080a,#0a0d0e);
+  }
+  .brand .eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.26em;text-transform:uppercase;
+    color:var(--glaz);opacity:.85;}
+  .brand h1{font-size:22px;font-weight:700;color:#fff;letter-spacing:.5px;line-height:1;margin-top:3px;}
+  .warn{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.03em;line-height:1.45;color:var(--topaze);
+    border:1px solid var(--jauneD);background:rgba(255,221,0,.05);border-radius:3px;padding:6px 11px;
+    max-width:560px;
+  }
+  .warn b{color:var(--jaune);}
+
+  /* ---------- LAYOUT ---------- */
+  .layout{display:flex;flex:1 1 auto;min-height:0;}
+  .rail{
+    background:var(--nuit);overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px;flex:0 0 auto;
+  }
+  .left{width:280px;border-right:1px solid var(--ligne);}
+  .right{width:336px;border-left:1px solid var(--ligne);}
+  .center{flex:1 1 auto;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(120% 120% at 50% 40%,#0c1013 0%,#000 100%);padding:16px;min-width:0;overflow:auto;}
+
+  .block{border:1px solid var(--ligne);background:var(--nuit2);border-radius:4px;padding:10px;}
+  .eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--glazL);margin-bottom:9px;display:flex;align-items:center;gap:7px;}
+  .eyebrow::before{content:"";width:6px;height:6px;background:var(--glaz);display:inline-block;}
+
+  /* ---------- OUTILS ---------- */
+  .tools{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .tbtn,.ovbtn,.spbtn{
+    font-family:var(--mono);font-size:11px;letter-spacing:.04em;
+    background:var(--nuit3);border:1px solid var(--ligne);color:var(--azur);
+    padding:8px 6px;cursor:pointer;text-align:center;transition:.12s;user-select:none;
+  }
+  .tbtn:hover,.ovbtn:hover,.spbtn:hover{border-color:var(--glaz);color:#fff;}
+  .tbtn.on,.ovbtn.on,.spbtn.on{background:var(--glaz);border-color:var(--glaz);color:#000;font-weight:700;}
+
+  .row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 3px;}
+  .row label{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--grisD);}
+  .row .val{font-family:var(--mono);font-size:13px;color:var(--jaune);font-weight:700;
+    min-width:58px;text-align:right;}
+  input[type=range]{width:100%;height:16px;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer;}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--ligne);}
+  input[type=range]::-moz-range-track{height:3px;background:var(--ligne);}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;
+    background:var(--glaz);margin-top:-5px;border:1px solid #000;}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;background:var(--glaz);border:1px solid #000;border-radius:0;}
+  select{width:100%;font-family:var(--mono);font-size:12px;background:var(--nuit3);color:var(--azur);
+    border:1px solid var(--ligne);padding:6px;}
+  select:focus{outline:none;border-color:var(--glaz);}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;background:var(--nuit3);
+    border:1px solid var(--ligne);color:var(--azur);padding:9px 6px;cursor:pointer;transition:.12s;text-transform:uppercase;}
+  .btn:hover{border-color:var(--glaz);color:#fff;}
+  .btn.play{border-color:var(--glaz);color:var(--glaz);}
+  .btn.play.active{background:var(--glaz);color:#000;font-weight:700;}
+  .btn.danger:hover{border-color:#e05a5a;color:#ffb3b3;}
+  .speeds{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
+  .ovs{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;}
+  .ovbtn{padding:6px 2px;font-size:10px;}
+  .hint{font-family:var(--mono);font-size:10px;color:var(--grisD);line-height:1.5;margin-top:7px;}
+
+  /* ---------- CANVAS ---------- */
+  .stage{position:relative;}
+  canvas#grid{
+    background:#14100b;border:1px solid var(--glazD);border-radius:2px;
+    max-width:100%;height:auto;cursor:crosshair;
+    box-shadow:0 0 0 1px #000,0 0 40px rgba(0,169,178,.12),inset 0 0 60px rgba(0,0,0,.6);
+  }
+  .stage .corner{position:absolute;width:10px;height:10px;border:1px solid var(--glaz);opacity:.6;pointer-events:none;}
+  .stage .corner.tl{top:-1px;left:-1px;border-right:none;border-bottom:none;}
+  .stage .corner.tr{top:-1px;right:-1px;border-left:none;border-bottom:none;}
+  .stage .corner.bl{bottom:-1px;left:-1px;border-right:none;border-top:none;}
+  .stage .corner.br{bottom:-1px;right:-1px;border-left:none;border-top:none;}
+
+  /* ---------- PANNEAU DROIT ---------- */
+  .legend{display:flex;align-items:center;gap:9px;margin:5px 0;font-size:12px;}
+  .legend .sw{width:14px;height:14px;flex:0 0 auto;image-rendering:pixelated;}
+  .legend i{color:var(--grisD);font-style:italic;font-size:11px;}
+  .stat{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;margin:4px 0;}
+  .stat span{color:var(--grisD);}
+  .stat b{color:var(--jaune);font-weight:700;}
+  .stat b.l{color:var(--listeria);}
+  .stat b.s{color:var(--salmonella);}
+
+  .diag .drow{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;margin:2px 0;}
+  .diag .drow span:first-child{color:var(--grisD);}
+  .diag .drow span:last-child{color:var(--azur);}
+  .diag .drow.hi span:last-child{color:var(--jaune);}
+  .diag .sep{height:1px;background:var(--ligne);margin:6px 0;}
+  .interp{margin-top:8px;padding:7px 9px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;
+    text-align:center;border:1px solid;}
+  .i-grow{color:#7ee2a3;border-color:#1e6b3f;background:rgba(30,107,63,.15);}
+  .i-slow{color:var(--jaune);border-color:var(--jauneD);background:rgba(255,221,0,.06);}
+  .i-death{color:#ff9a9a;border-color:#7a2e2e;background:rgba(122,46,46,.15);}
+  .i-heat{color:var(--salmonella);border-color:#8a4a1e;background:rgba(249,115,22,.12);}
+  .i-none{color:var(--grisD);border-color:var(--ligne);background:transparent;}
+  .i-sat{color:var(--glazL);border-color:var(--glazD);background:rgba(0,169,178,.1);}
+
+  canvas#chart{width:100%;height:120px;background:#080b0d;border:1px solid var(--ligne);display:block;}
+  .msg{font-family:var(--mono);font-size:10.5px;color:var(--grisD);line-height:1.55;margin:5px 0;padding-left:13px;position:relative;}
+  .msg::before{content:"▸";color:var(--glaz);position:absolute;left:0;}
+  .foot{font-family:var(--mono);font-size:9.5px;color:#4a5a63;line-height:1.5;margin-top:8px;}
+
+  ::-webkit-scrollbar{width:9px;height:9px;}
+  ::-webkit-scrollbar-track{background:var(--noir);}
+  ::-webkit-scrollbar-thumb{background:var(--ligne);}
+  ::-webkit-scrollbar-thumb:hover{background:var(--glazD);}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="eyebrow">Microbiologie prévisionnelle · bac à sable</div>
+    <h1>MICROBIO&nbsp;PAINT</h1>
+  </div>
+  <div class="warn">⚠ SIMULATEUR PÉDAGOGIQUE SIMPLIFIÉ. Ne pas utiliser pour valider une <b>durée de vie</b>, un <b>procédé thermique</b>, des <b>limites HACCP</b> ni une conformité réglementaire. Valeurs indicatives et dépendantes de la matrice.</div>
+</header>
+
+<div class="layout">
+  <!-- ================= RAIL GAUCHE ================= -->
+  <div class="rail left">
+    <div class="block">
+      <div class="eyebrow">Outils</div>
+      <div class="tools">
+        <div class="tbtn on" data-tool="bacteria">BACTÉRIES</div>
+        <div class="tbtn" data-tool="temperature">TEMPÉRATURE</div>
+        <div class="tbtn" data-tool="pH">pH</div>
+        <div class="tbtn" data-tool="aw">aw</div>
+        <div class="tbtn" data-tool="heat" style="grid-column:1/3">TRAITEMENT THERMIQUE</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="eyebrow">Pinceau</div>
+      <div class="row"><label>Taille</label><span class="val" id="v-brush">3</span></div>
+      <input type="range" id="brush" min="1" max="8" step="1" value="3">
+      <div class="row"><label>Intensité</label><span class="val" id="v-inten">0.80</span></div>
+      <input type="range" id="inten" min="0.05" max="1" step="0.05" value="0.8">
+    </div>
+
+    <div class="block">
+      <div class="eyebrow">Outil actif</div>
+      <div class="tparams" data-for="bacteria">
+        <div class="row"><label>Espèce</label></div>
+        <select id="species">
+          <option value="listeria_monocytogenes">Listeria monocytogenes</option>
+          <option value="salmonella_enterica">Salmonella enterica</option>
+        </select>
+        <div class="row" style="margin-top:8px"><label>Inoculation</label><span class="val" id="v-inoc">3.0 log</span></div>
+        <input type="range" id="inoc" min="0" max="9" step="0.5" value="3">
+      </div>
+      <div class="tparams" data-for="temperature" style="display:none">
+        <div class="row"><label>Temp. cible</label><span class="val" id="v-ttar">8 °C</span></div>
+        <input type="range" id="ttar" min="0" max="60" step="1" value="8">
+      </div>
+      <div class="tparams" data-for="pH" style="display:none">
+        <div class="row"><label>pH cible</label><span class="val" id="v-phtar">6.8</span></div>
+        <input type="range" id="phtar" min="3" max="9" step="0.1" value="6.8">
+      </div>
+      <div class="tparams" data-for="aw" style="display:none">
+        <div class="row"><label>aw cible</label><span class="val" id="v-awtar">0.985</span></div>
+        <input type="range" id="awtar" min="0.85" max="1.00" step="0.005" value="0.985">
+      </div>
+      <div class="tparams" data-for="heat" style="display:none">
+        <div class="row"><label>Temp. trait.</label><span class="val" id="v-htemp">65 °C</span></div>
+        <input type="range" id="htemp" min="55" max="100" step="1" value="65">
+        <div class="row" style="margin-top:8px"><label>Durée</label><span class="val" id="v-hdur">3.0 min</span></div>
+        <input type="range" id="hdur" min="0.1" max="10" step="0.1" value="3">
+        <p class="hint">Peindre = appliquer une inactivation D/z locale.</p>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="eyebrow">Simulation</div>
+      <div class="grid2">
+        <button class="btn play" id="play">▶ LECTURE</button>
+        <button class="btn" id="step">⏭ PAS</button>
+        <button class="btn danger" id="reset">↺ RESET</button>
+        <button class="btn danger" id="clear">✕ BACTÉRIES</button>
+      </div>
+      <div class="row" style="margin-top:10px"><label>Pas dt</label><span class="val" id="v-dt">0.25 h</span></div>
+      <input type="range" id="dt" min="0.1" max="1" step="0.05" value="0.25">
+      <div class="row" style="margin-top:6px"><label>Vitesse</label></div>
+      <div class="speeds" id="speeds">
+        <div class="spbtn" data-speed="0.25">0.25×</div>
+        <div class="spbtn" data-speed="0.5">0.5×</div>
+        <div class="spbtn on" data-speed="1">1×</div>
+        <div class="spbtn" data-speed="2">2×</div>
+        <div class="spbtn" data-speed="5">5×</div>
+        <div class="spbtn" data-speed="10">10×</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="eyebrow">Overlay du milieu</div>
+      <div class="ovs" id="overlays">
+        <div class="ovbtn on" data-ov="none">OFF</div>
+        <div class="ovbtn" data-ov="temperature">T°</div>
+        <div class="ovbtn" data-ov="pH">pH</div>
+        <div class="ovbtn" data-ov="aw">aw</div>
+        <div class="ovbtn" data-ov="heat">🔥</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= ZONE CENTRALE ================= -->
+  <div class="center">
+    <div class="stage">
+      <span class="corner tl"></span><span class="corner tr"></span>
+      <span class="corner bl"></span><span class="corner br"></span>
+      <canvas id="grid" width="960" height="600"></canvas>
+    </div>
+  </div>
+
+  <!-- ================= RAIL DROIT ================= -->
+  <div class="rail right">
+    <div class="block">
+      <div class="eyebrow">Espèces</div>
+      <div class="legend"><canvas class="sw" id="sw-l" width="14" height="14"></canvas>Listeria monocytogenes <i>Gram +</i></div>
+      <div class="legend"><canvas class="sw" id="sw-s" width="14" height="14"></canvas>Salmonella enterica <i>Gram −</i></div>
+    </div>
+
+    <div class="block">
+      <div class="eyebrow">Milieu (moyennes)</div>
+      <div class="stat"><span>Température</span><b id="avg-t">8.0 °C</b></div>
+      <div class="stat"><span>pH</span><b id="avg-ph">6.80</b></div>
+      <div class="stat"><span>aw</span><b id="avg-aw">0.985</b></div>
+      <div class="stat"><span>Temps simulé</span><b id="sim-time">0.0 h</b></div>
+    </div>
+
+    <div class="block">
+      <div class="eyebrow">Populations</div>
+      <div class="stat"><span>Listeria — cellules</span><b class="l" id="pop-l-cells">0</b></div>
+      <div class="stat"><span>Listeria — moy.</span><b class="l" id="pop-l-mean">0.0 log</b></div>
+      <div class="stat"><span>Salmonella — cellules</span><b class="s" id="pop-s-cells">0</b></div>
+      <div class="stat"><span>Salmonella — moy.</span><b class="s" id="pop-s-mean">0.0 log</b></div>
+      <div style="height:8px"></div>
+      <canvas id="chart" width="304" height="120"></canvas>
+      <p class="foot">Courbe : population moyenne log10 sur cellules colonisées.</p>
+    </div>
+
+    <div class="block diag">
+      <div class="eyebrow">Diagnostic local</div>
+      <div id="diag-body"><p class="hint">Survolez la matrice pour analyser une cellule (espèce sélectionnée dans l'outil Bactéries).</p></div>
+    </div>
+
+    <div class="block">
+      <div class="eyebrow">Messages pédagogiques</div>
+      <div class="msg">Croissance locale = muOpt × gammaT × gammaPH × gammaAW.</div>
+      <div class="msg">Une zone froide peut permettre la croissance lente de Listeria, mais rarement celle de Salmonella.</div>
+      <div class="msg">Une faible aw bloque la croissance sans destruction instantanée.</div>
+      <div class="msg">Le traitement thermique réduit la population selon un modèle D/z simplifié.</div>
+      <div class="msg">Outil pédagogique — ne valide ni durée de vie ni procédé.</div>
+      <p class="foot">Charte graphique ADRIA — glaz #00A9B2, jaune #FFDD00. Rendu pixel-art schématique.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   MICROBIO PAINT — version pixel-art (charte ADRIA)
+     1. Base de données
+     2. Palette, état et initialisation
+     3. Fonctions gamma et modèles microbiologiques
+     4. Sprites & texture pixel-art (baking)
+     5. Outils de peinture
+     6. Simulation
+     7. Rendu canvas pixel-art
+     8. Interface et événements
+     9. Diagnostic et messages pédagogiques
+   ===================================================================== */
+
+
+/* =====================================================================
+   1. BASE DE DONNÉES  (identique à la version de référence)
+   ===================================================================== */
+const MICROBIOLOGY_DATABASE = {
+  metadata: {
+    purpose: "Educational predictive microbiology simulator",
+    version: "pixel_art_v1",
+    warning:
+      "Educational use only. Do not use this simulator to validate food safety, shelf-life, HACCP critical limits, regulatory compliance, or thermal processes. Values are indicative and matrix-dependent.",
+    model:
+      "Simplified gamma concept: mu = muOpt * gammaT * gammaPH * gammaAW. Thermal treatment uses a simplified D/z log-linear inactivation model.",
+    sources: [
+      { id: "FSANZ_LISTERIA_2013", shortName: "FSANZ Listeria monocytogenes factsheet", use: "Broad cardinal growth values and qualitative limits", confidence: "high for broad ranges, lower for matrix-specific use" },
+      { id: "FSANZ_SALMONELLA_2013", shortName: "FSANZ Salmonella non-typhoidal factsheet", use: "Broad cardinal growth values and qualitative limits", confidence: "high for broad ranges" },
+      { id: "MPI_ESR_MEAT_DZ_2015", shortName: "MPI/ESR D and z values for heat inactivation of pathogens in raw meat", use: "Indicative D/z values for heat inactivation in raw meat", confidence: "medium for scoped raw meat only" },
+      { id: "PEDAGOGICAL_DEFAULT", shortName: "Pedagogical default chosen for visual simulation", use: "Value not directly validated; selected for visual clarity and plausibility", confidence: "low" }
+    ]
+  },
+  species: {
+    listeria_monocytogenes: {
+      displayName: "Listeria monocytogenes",
+      color: "#60a5fa", pixelColor: "#60a5fa", pixelLight: "#bfdbfe",
+      type: "Gram-positive, non-spore-forming foodborne pathogen",
+      notes: [
+        "Can grow slowly at refrigeration temperatures.",
+        "Growth is strongly affected by pH, aw, temperature and matrix.",
+        "Thermal resistance is matrix-dependent."
+      ],
+      cardinal: {
+        temperature: {
+          min: { value: -1.5, unit: "°C", source: "FSANZ_LISTERIA_2013", confidence: "high", notes: "Growth possible near refrigeration temperatures when other conditions are favourable." },
+          opt: { value: 35, unit: "°C", source: "FSANZ_LISTERIA_2013", confidence: "high", notes: "Representative optimum within the broad 30–37 °C range." },
+          max: { value: 45, unit: "°C", source: "FSANZ_LISTERIA_2013", confidence: "high", notes: "Upper growth limit under otherwise favourable conditions." }
+        },
+        pH: {
+          min: { value: 4.0, unit: "pH", source: "FSANZ_LISTERIA_2013", confidence: "medium", notes: "Depends on acid type and other hurdles." },
+          opt: { value: 7.0, unit: "pH", source: "FSANZ_LISTERIA_2013", confidence: "high", notes: "Representative near-neutral optimum." },
+          max: { value: 9.6, unit: "pH", source: "FSANZ_LISTERIA_2013", confidence: "medium", notes: "Upper growth limit." }
+        },
+        aw: {
+          min: { value: 0.90, unit: "aw", source: "FSANZ_LISTERIA_2013", confidence: "high", notes: "Relatively tolerant to reduced aw." },
+          opt: { value: 0.98, unit: "aw", source: "PEDAGOGICAL_DEFAULT", confidence: "medium", notes: "Representative optimum for visual modelling." },
+          max: { value: 1.0, unit: "aw", source: "PEDAGOGICAL_DEFAULT", confidence: "low", notes: "Upper aw is not normally inhibitory; used for model completeness." }
+        }
+      },
+      growth: {
+        muOpt: { value: 0.75, unit: "log10/h", source: "PEDAGOGICAL_DEFAULT", confidence: "low", notes: "Chosen for interactive visual simulation, not fitted to a specific matrix." },
+        Nmax: { value: 9.0, unit: "log10 CFU/g equivalent", source: "PEDAGOGICAL_DEFAULT", confidence: "low", notes: "Generic carrying capacity for a rich food-like matrix." },
+        deathRateAdverse: { value: 0.03, unit: "log10/h", source: "PEDAGOGICAL_DEFAULT", confidence: "low", notes: "Simplified decline when growth is not possible." }
+      },
+      thermalResistance: {
+        Dref: { value: 2.4, unit: "min", source: "MPI_ESR_MEAT_DZ_2015", confidence: "medium", notes: "Indicative raw meat profile." },
+        Tref: { value: 65, unit: "°C", source: "MPI_ESR_MEAT_DZ_2015", confidence: "medium", notes: "Reference temperature." },
+        z: { value: 6.25, unit: "°C", source: "MPI_ESR_MEAT_DZ_2015", confidence: "medium", notes: "Indicative z-value." }
+      }
+    },
+    salmonella_enterica: {
+      displayName: "Salmonella enterica",
+      color: "#f97316", pixelColor: "#fb923c", pixelLight: "#fed7aa",
+      type: "Gram-negative foodborne pathogen species with many serovars",
+      notes: [
+        "Growth is favoured near neutral pH, high aw and warm temperatures.",
+        "Can survive for long periods in low-aw foods, but survival is not equivalent to growth.",
+        "Thermal resistance can increase in low-moisture or high-fat matrices."
+      ],
+      cardinal: {
+        temperature: {
+          min: { value: 5.2, unit: "°C", source: "FSANZ_SALMONELLA_2013", confidence: "high", notes: "Near-minimum growth is very slow." },
+          opt: { value: 37, unit: "°C", source: "FSANZ_SALMONELLA_2013", confidence: "high", notes: "Representative optimum within the broad 35–43 °C range." },
+          max: { value: 46.2, unit: "°C", source: "FSANZ_SALMONELLA_2013", confidence: "high", notes: "Upper growth limit under favourable conditions." }
+        },
+        pH: {
+          min: { value: 3.8, unit: "pH", source: "FSANZ_SALMONELLA_2013", confidence: "medium", notes: "Depends on acid type, temperature, salt and other hurdles." },
+          opt: { value: 7.2, unit: "pH", source: "FSANZ_SALMONELLA_2013", confidence: "high", notes: "Representative near-neutral optimum." },
+          max: { value: 9.5, unit: "pH", source: "FSANZ_SALMONELLA_2013", confidence: "medium", notes: "Upper growth limit." }
+        },
+        aw: {
+          min: { value: 0.93, unit: "aw", source: "FSANZ_SALMONELLA_2013", confidence: "high", notes: "Growth minimum; survival may occur below this." },
+          opt: { value: 0.99, unit: "aw", source: "FSANZ_SALMONELLA_2013", confidence: "high", notes: "Near-free water optimum." },
+          max: { value: 1.0, unit: "aw", source: "PEDAGOGICAL_DEFAULT", confidence: "low", notes: "For model completeness." }
+        }
+      },
+      growth: {
+        muOpt: { value: 1.00, unit: "log10/h", source: "PEDAGOGICAL_DEFAULT", confidence: "low", notes: "Chosen for interactive visual simulation, not fitted to a specific matrix." },
+        Nmax: { value: 9.0, unit: "log10 CFU/g equivalent", source: "PEDAGOGICAL_DEFAULT", confidence: "low", notes: "Generic rich-matrix carrying capacity." },
+        deathRateAdverse: { value: 0.035, unit: "log10/h", source: "PEDAGOGICAL_DEFAULT", confidence: "low", notes: "Simplified decline when growth is not possible." }
+      },
+      thermalResistance: {
+        Dref: { value: 2.1, unit: "min", source: "MPI_ESR_MEAT_DZ_2015", confidence: "medium", notes: "Indicative raw meat profile." },
+        Tref: { value: 65, unit: "°C", source: "MPI_ESR_MEAT_DZ_2015", confidence: "medium", notes: "Reference temperature." },
+        z: { value: 6.57, unit: "°C", source: "MPI_ESR_MEAT_DZ_2015", confidence: "medium", notes: "Indicative z-value." }
+      }
+    }
+  }
+};
+const DB = MICROBIOLOGY_DATABASE;
+const SPECIES_KEYS = Object.keys(DB.species);
+
+
+/* =====================================================================
+   2. PALETTE, ÉTAT ET INITIALISATION
+   ===================================================================== */
+const C = {
+  glaz:'#00A9B2', glazD:'#00666c', glazL:'#5fd0d8',
+  azur:'#DEF0F3', jaune:'#FFDD00', jauneD:'#c9a500', topaze:'#FFF4BD',
+  gris:'#C4C4C4', grisD:'#8a8a8a', blanc:'#ffffff', noir:'#000000'
+};
+
+// Grille de simulation. Chaque cellule = ART×ART pixels d'art, affichée ×SCALE (net).
+const GRID = { cols: 80, rows: 50 };
+const N = GRID.cols * GRID.rows;
+const ART = 6;                          // pixels d'art par cellule
+const FIELD_W = GRID.cols * ART;        // 480
+const FIELD_H = GRID.rows * ART;        // 300
+const SCALE = 2;                        // field -> écran (960×600), échelle entière = net
+const CELL_SCREEN = ART * SCALE;        // 12 px écran / cellule
+
+const INIT = { temperature: 8, pH: 6.8, aw: 0.985 };
+
+const environment = {
+  temperature: new Float32Array(N),
+  pH:          new Float32Array(N),
+  aw:          new Float32Array(N),
+  heatTrace:   new Float32Array(N)
+};
+const populations = {};
+for (const k of SPECIES_KEYS) populations[k] = new Float32Array(N);
+
+const SIM = { dt: 0.25, baseIntervalMs: 90, speed: 1, playing: false, time: 0, stepCount: 0 };
+
+const SAMPLE_EVERY = 2, MAX_HISTORY = 300;
+const history = { t: [], meanL: [], meanS: [] };
+
+const tool = {
+  active: 'bacteria',
+  brushSize: 3,
+  intensity: 0.8,
+  bacteria: { species: 'listeria_monocytogenes', inoculation: 3.0 },
+  temperature: { target: 8 },
+  pH: { target: 6.8 },
+  aw: { target: 0.985 },
+  heat: { temp: 65, duration: 3.0 }
+};
+let overlay = 'none';
+let hoverIdx = -1;
+
+function initEnvironment() {
+  for (let i = 0; i < N; i++) {
+    environment.temperature[i] = INIT.temperature;
+    environment.pH[i] = INIT.pH;
+    environment.aw[i] = INIT.aw;
+    environment.heatTrace[i] = 0;
+  }
+}
+function clearBacteria() {
+  for (const k of SPECIES_KEYS) populations[k].fill(0);
+  history.t.length = history.meanL.length = history.meanS.length = 0;
+}
+function resetAll() {
+  initEnvironment(); clearBacteria();
+  SIM.time = 0; SIM.stepCount = 0;
+}
+
+
+/* =====================================================================
+   3. FONCTIONS GAMMA ET MODÈLES MICROBIOLOGIQUES  (inchangés)
+   ===================================================================== */
+function clamp01(x){ return x < 0 ? 0 : (x > 1 ? 1 : x); }
+function gammaCardinalSimple(x, min, opt, max) {
+  if (x <= min || x >= max) return 0;
+  if (x <= opt) return (x - min) / (opt - min);
+  return (max - x) / (max - opt);
+}
+function smooth(g){ return g * g * (3 - 2 * g); }
+function gammaAw(aw, awMin, awOpt) {
+  if (aw <= awMin) return 0;
+  if (aw >= awOpt) return 1;
+  return (aw - awMin) / (awOpt - awMin);
+}
+function computeGamma(speciesKey, idx) {
+  const c = DB.species[speciesKey].cardinal;
+  const T = environment.temperature[idx], pH = environment.pH[idx], aw = environment.aw[idx];
+  const gT  = smooth(gammaCardinalSimple(T,  c.temperature.min.value, c.temperature.opt.value, c.temperature.max.value));
+  const gPH = smooth(gammaCardinalSimple(pH, c.pH.min.value,          c.pH.opt.value,          c.pH.max.value));
+  const gAW = gammaAw(aw, c.aw.min.value, c.aw.opt.value);
+  return { gT, gPH, gAW, gTotal: gT * gPH * gAW };
+}
+
+
+/* =====================================================================
+   4. SPRITES & TEXTURE PIXEL-ART (baking)
+   ---------------------------------------------------------------------
+   Même esprit que la version « échelle » : on peint à basse résolution
+   puis on met à l'échelle sans lissage (image-rendering:pixelated).
+   ===================================================================== */
+function hashRand(a, b, c) {
+  const s = Math.sin(a * 12.9898 + b * 78.233 + c * 37.719) * 43758.5453123;
+  return s - Math.floor(s);
+}
+// Assombrit une couleur hex par un facteur (0..1)
+function shade(hex, f) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.round(((n >> 16) & 255) * f);
+  const g = Math.round(((n >> 8) & 255) * f);
+  const b = Math.round((n & 255) * f);
+  return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+// Palette de nuances par espèce : corps / clair / ombre
+const SHADES = {};
+for (const k of SPECIES_KEYS) {
+  SHADES[k] = { body: DB.species[k].pixelColor, light: DB.species[k].pixelLight, dark: shade(DB.species[k].pixelColor, 0.62) };
+}
+
+// --- Texture de matrice alimentaire (fond) précalculée une fois ---
+const bgTex = document.createElement('canvas');
+bgTex.width = FIELD_W; bgTex.height = FIELD_H;
+(function buildMatrix(){
+  const b = bgTex.getContext('2d');
+  b.fillStyle = '#1d160e'; b.fillRect(0, 0, FIELD_W, FIELD_H);   // matrice sombre chaude
+  for (let y = 0; y < FIELD_H; y++) {
+    for (let x = 0; x < FIELD_W; x++) {
+      const r = hashRand(x, y, 7.13);
+      if (r > 0.90)      { b.fillStyle = '#27201510'.slice(0,7); b.fillStyle = '#2a2015'; b.fillRect(x, y, 1, 1); }
+      else if (r < 0.06) { b.fillStyle = '#15100a'; b.fillRect(x, y, 1, 1); }
+      if (r > 0.988)     { b.fillStyle = (r > 0.994 ? '#0c3438' : '#3a2f18'); b.fillRect(x, y, 1, 1); } // rares specks glaz/topaze
+    }
+  }
+})();
+
+// --- Vignettes de légende (sprites bactéries) ---
+function drawLegendSwatch(canvasId, key) {
+  const cv = document.getElementById(canvasId);
+  const g = cv.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  const sh = SHADES[key];
+  g.fillStyle = '#0a0d0e'; g.fillRect(0, 0, 14, 14);
+  // petit bacille pixel-art 14×14
+  g.fillStyle = sh.dark;  g.fillRect(3, 6, 8, 3);
+  g.fillStyle = sh.body;  g.fillRect(3, 5, 8, 3);
+  g.fillStyle = sh.light; g.fillRect(4, 5, 2, 1); g.fillRect(9, 6, 1, 1);
+}
+
+
+/* =====================================================================
+   5. OUTILS DE PEINTURE  (inchangés)
+   ===================================================================== */
+function applyHeatAt(idx, falloff) {
+  const t = tool.heat.temp, dur = tool.heat.duration, intensity = tool.intensity * falloff;
+  for (const key of SPECIES_KEYS) {
+    const th = DB.species[key].thermalResistance;
+    const D = th.Dref.value * Math.pow(10, (th.Tref.value - t) / th.z.value);
+    const logReduction = dur / D;
+    let p = populations[key][idx] - logReduction * intensity;
+    if (p < 0) p = 0;
+    populations[key][idx] = p;
+  }
+  const trace = tool.intensity * falloff;
+  if (trace > environment.heatTrace[idx]) environment.heatTrace[idx] = trace;
+}
+function applyToolAtCell(idx, falloff) {
+  const inten = tool.intensity * falloff;
+  switch (tool.active) {
+    case 'bacteria': {
+      const key = tool.bacteria.species, target = tool.bacteria.inoculation, cur = populations[key][idx];
+      if (target > cur) populations[key][idx] = cur + (target - cur) * inten;
+      break;
+    }
+    case 'temperature': environment.temperature[idx] += (tool.temperature.target - environment.temperature[idx]) * inten; break;
+    case 'pH':          environment.pH[idx]          += (tool.pH.target          - environment.pH[idx])          * inten; break;
+    case 'aw':          environment.aw[idx]          += (tool.aw.target          - environment.aw[idx])          * inten; break;
+    case 'heat':        applyHeatAt(idx, falloff); break;
+  }
+}
+function paintAt(col, row) {
+  const r = tool.brushSize;
+  for (let dr = -r; dr <= r; dr++) for (let dc = -r; dc <= r; dc++) {
+    const cc = col + dc, rr = row + dr;
+    if (cc < 0 || cc >= GRID.cols || rr < 0 || rr >= GRID.rows) continue;
+    const dist = Math.sqrt(dc * dc + dr * dr);
+    if (dist > r + 0.0001) continue;
+    const falloff = Math.max(0.15, 1 - dist / (r + 1));
+    applyToolAtCell(rr * GRID.cols + cc, falloff);
+  }
+}
+
+
+/* =====================================================================
+   6. SIMULATION  (inchangée)
+   ===================================================================== */
+function stepModel() {
+  const dt = SIM.dt;
+  for (const key of SPECIES_KEYS) {
+    const sp = DB.species[key];
+    const muOpt = sp.growth.muOpt.value, Nmax = sp.growth.Nmax.value, death = sp.growth.deathRateAdverse.value;
+    const pop = populations[key];
+    for (let idx = 0; idx < N; idx++) {
+      let logN = pop[idx];
+      if (logN <= 0) continue;
+      const g = computeGamma(key, idx), mu = muOpt * g.gTotal;
+      if (mu > 0) logN = logN + mu * dt * (1 - logN / Nmax);
+      else        logN = logN - death * dt;
+      if (logN < 0) logN = 0;
+      if (logN > Nmax) logN = Nmax;
+      pop[idx] = logN;
+    }
+  }
+  for (let idx = 0; idx < N; idx++) {
+    if (environment.heatTrace[idx] > 0) {
+      environment.heatTrace[idx] *= 0.92;
+      if (environment.heatTrace[idx] < 0.01) environment.heatTrace[idx] = 0;
+    }
+  }
+  SIM.time += dt; SIM.stepCount++;
+  if (SIM.stepCount % SAMPLE_EVERY === 0) sampleHistory();
+}
+function meanLog(key) {
+  const pop = populations[key]; let s = 0, c = 0;
+  for (let i = 0; i < N; i++) if (pop[i] > 0.01) { s += pop[i]; c++; }
+  return c ? s / c : 0;
+}
+function colonizedCells(key) {
+  const pop = populations[key]; let c = 0;
+  for (let i = 0; i < N; i++) if (pop[i] > 0.01) c++;
+  return c;
+}
+function sampleHistory() {
+  history.t.push(SIM.time);
+  history.meanL.push(meanLog('listeria_monocytogenes'));
+  history.meanS.push(meanLog('salmonella_enterica'));
+  if (history.t.length > MAX_HISTORY) { history.t.shift(); history.meanL.shift(); history.meanS.shift(); }
+}
+
+
+/* =====================================================================
+   7. RENDU CANVAS PIXEL-ART
+   ---------------------------------------------------------------------
+   On dessine tout dans un buffer basse résolution (field, 480×300) puis
+   on le blit ×2 sur le canvas d'affichage sans lissage → pixels nets.
+   ===================================================================== */
+const canvas = document.getElementById('grid');
+const ctx = canvas.getContext('2d');
+const field = document.createElement('canvas');
+field.width = FIELD_W; field.height = FIELD_H;
+const f = field.getContext('2d');
+
+function hsla(h, s, l, a){ return `hsla(${h},${s}%,${l}%,${a})`; }
+function tempColor(t){ const x = clamp01(t / 60); return hsla(240 - 240 * x, 78, 52, 1); }
+function phColor(p){ const x = clamp01((p - 3) / 6); return hsla(x * 280, 68, 52, 1); }
+function awColor(a){ const x = clamp01((a - 0.85) / 0.15); return hsla(40 + x * 170, 66, 52, 1); }
+
+function drawOverlayField() {
+  for (let idx = 0; idx < N; idx++) {
+    const col = idx % GRID.cols, row = (idx / GRID.cols) | 0;
+    if (overlay === 'heat') {
+      const h = environment.heatTrace[idx]; if (h <= 0) continue;
+      f.globalAlpha = Math.min(0.78, h * 0.78); f.fillStyle = '#ef4444';
+    } else {
+      f.globalAlpha = 0.5;
+      if (overlay === 'temperature') f.fillStyle = tempColor(environment.temperature[idx]);
+      else if (overlay === 'pH')     f.fillStyle = phColor(environment.pH[idx]);
+      else if (overlay === 'aw')     f.fillStyle = awColor(environment.aw[idx]);
+    }
+    f.fillRect(col * ART, row * ART, ART, ART);
+  }
+  f.globalAlpha = 1;
+}
+function drawHeatField() {
+  if (overlay === 'heat') return;
+  f.fillStyle = '#f97316';
+  for (let idx = 0; idx < N; idx++) {
+    const h = environment.heatTrace[idx]; if (h <= 0) continue;
+    f.globalAlpha = Math.min(0.6, h * 0.6);
+    const col = idx % GRID.cols, row = (idx / GRID.cols) | 0;
+    f.fillRect(col * ART, row * ART, ART, ART);
+  }
+  f.globalAlpha = 1;
+}
+
+// Colonie pixel-art déterministe : bâtonnets stables, apparaissant/disparaissant avec la population
+function stampColony(idx, key, logN) {
+  const sp = DB.species[key], sh = SHADES[key];
+  const density = clamp01(logN / sp.growth.Nmax.value);
+  const maxRods = 10;
+  const count = Math.round(density * maxRods);
+  if (count <= 0) return;
+  const bx = (idx % GRID.cols) * ART, by = ((idx / GRID.cols) | 0) * ART;
+  const ch = SPECIES_KEYS.indexOf(key);
+  for (let i = 0; i < count; i++) {
+    const ax = bx + Math.floor(hashRand(idx, i * 2 + 1, ch * 7 + 1) * (ART - 2));
+    const ay = by + Math.floor(hashRand(idx, i * 2 + 2, ch * 7 + 3) * (ART - 2));
+    const horiz = hashRand(idx, i, ch * 17 + 9) > 0.5;
+    // ombre + corps (bacille de 2 px)
+    f.fillStyle = sh.dark;
+    if (horiz) f.fillRect(ax, ay + 1, 2, 1); else f.fillRect(ax + 1, ay, 1, 2);
+    f.fillStyle = sh.body;
+    if (horiz) f.fillRect(ax, ay, 2, 1); else f.fillRect(ax, ay, 1, 2);
+    // pointe lumineuse occasionnelle
+    if (hashRand(idx, i, ch * 13 + 5) > 0.55) { f.fillStyle = sh.light; f.fillRect(ax, ay, 1, 1); }
+  }
+}
+function drawBacteriaField() {
+  for (let idx = 0; idx < N; idx++) {
+    // on dessine l'espèce minoritaire d'abord, la dominante ensuite (priorité visuelle)
+    let domKey = SPECIES_KEYS[0], domVal = -1;
+    for (const key of SPECIES_KEYS) { const v = populations[key][idx]; if (v > domVal) { domVal = v; domKey = key; } }
+    for (const key of SPECIES_KEYS) { if (key === domKey) continue; const v = populations[key][idx]; if (v >= 0.05) stampColony(idx, key, v); }
+    if (domVal >= 0.05) stampColony(idx, domKey, domVal);
+  }
+}
+
+// Aperçu du pinceau (anneau clignotant), style HUD
+function drawBrushPreview() {
+  if (hoverIdx < 0) return;
+  const col = hoverIdx % GRID.cols, row = (hoverIdx / GRID.cols) | 0, r = tool.brushSize;
+  const c = tool.active === 'heat' ? '#f97316'
+          : tool.active === 'bacteria' ? DB.species[tool.bacteria.species].pixelColor
+          : C.glazL;
+  f.globalAlpha = 0.22 + 0.18 * Math.sin(performance.now() * 0.006);
+  f.fillStyle = c;
+  for (let dr = -r; dr <= r; dr++) for (let dc = -r; dc <= r; dc++) {
+    const cc = col + dc, rr = row + dr;
+    if (cc < 0 || cc >= GRID.cols || rr < 0 || rr >= GRID.rows) continue;
+    const dist = Math.sqrt(dc * dc + dr * dr);
+    if (dist > r + 0.0001 || dist <= r - 1) continue;   // anneau seulement
+    f.fillRect(cc * ART, rr * ART, ART, ART);
+  }
+  f.globalAlpha = 1;
+}
+
+function render() {
+  f.clearRect(0, 0, FIELD_W, FIELD_H);
+  f.drawImage(bgTex, 0, 0);                 // matrice
+  if (overlay !== 'none') drawOverlayField();
+  drawHeatField();
+  drawBacteriaField();
+  drawBrushPreview();
+  // blit net vers l'affichage
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(field, 0, 0, canvas.width, canvas.height);
+}
+
+
+/* =====================================================================
+   8. INTERFACE ET ÉVÉNEMENTS
+   ===================================================================== */
+document.querySelectorAll('.tbtn').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.tbtn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  tool.active = btn.dataset.tool;
+  document.querySelectorAll('.tparams').forEach(p => p.style.display = (p.dataset.for === tool.active) ? '' : 'none');
+}));
+document.querySelectorAll('.ovbtn').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.ovbtn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on'); overlay = btn.dataset.ov;
+}));
+document.querySelectorAll('.spbtn').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.spbtn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on'); SIM.speed = parseFloat(btn.dataset.speed);
+}));
+
+function bindSlider(id, valId, fmtFn, apply) {
+  const el = document.getElementById(id), vv = document.getElementById(valId);
+  const update = () => { const v = parseFloat(el.value); apply(v); vv.textContent = fmtFn(v); };
+  el.addEventListener('input', update); update();
+}
+bindSlider('brush','v-brush', v => String(v),            v => tool.brushSize = v);
+bindSlider('inten','v-inten', v => v.toFixed(2),         v => tool.intensity = v);
+bindSlider('inoc','v-inoc',   v => v.toFixed(1)+' log',  v => tool.bacteria.inoculation = v);
+bindSlider('ttar','v-ttar',   v => v.toFixed(0)+' °C',   v => tool.temperature.target = v);
+bindSlider('phtar','v-phtar', v => v.toFixed(1),         v => tool.pH.target = v);
+bindSlider('awtar','v-awtar', v => v.toFixed(3),         v => tool.aw.target = v);
+bindSlider('htemp','v-htemp', v => v.toFixed(0)+' °C',   v => tool.heat.temp = v);
+bindSlider('hdur','v-hdur',   v => v.toFixed(1)+' min',  v => tool.heat.duration = v);
+bindSlider('dt','v-dt',       v => v.toFixed(2)+' h',    v => SIM.dt = v);
+
+document.getElementById('species').addEventListener('change', e => tool.bacteria.species = e.target.value);
+
+const playBtn = document.getElementById('play');
+playBtn.addEventListener('click', () => {
+  SIM.playing = !SIM.playing;
+  playBtn.textContent = SIM.playing ? '⏸ PAUSE' : '▶ LECTURE';
+  playBtn.classList.toggle('active', SIM.playing);
+});
+document.getElementById('step').addEventListener('click', () => { if (!SIM.playing) stepModel(); });
+document.getElementById('reset').addEventListener('click', () => {
+  resetAll(); SIM.playing = false; playBtn.textContent = '▶ LECTURE'; playBtn.classList.remove('active');
+});
+document.getElementById('clear').addEventListener('click', clearBacteria);
+
+let painting = false;
+function eventToCell(e) {
+  const rect = canvas.getBoundingClientRect();
+  const sx = canvas.width / rect.width, sy = canvas.height / rect.height;
+  const px = (e.clientX - rect.left) * sx, py = (e.clientY - rect.top) * sy;
+  const col = Math.floor(px / CELL_SCREEN), row = Math.floor(py / CELL_SCREEN);
+  if (col < 0 || col >= GRID.cols || row < 0 || row >= GRID.rows) return null;
+  return { col, row, idx: row * GRID.cols + col };
+}
+canvas.addEventListener('mousedown', e => { painting = true; const c = eventToCell(e); if (c) { paintAt(c.col, c.row); hoverIdx = c.idx; } });
+canvas.addEventListener('mousemove', e => { const c = eventToCell(e); if (c) { hoverIdx = c.idx; if (painting) paintAt(c.col, c.row); } });
+window.addEventListener('mouseup', () => painting = false);
+canvas.addEventListener('mouseleave', () => hoverIdx = -1);
+
+
+/* =====================================================================
+   9. DIAGNOSTIC ET MESSAGES PÉDAGOGIQUES
+   ===================================================================== */
+function fmt(x, d){ return Number(x).toFixed(d); }
+
+function interpret(key, idx, g, mu, logN) {
+  const Nmax = DB.species[key].growth.Nmax.value;
+  if (environment.heatTrace[idx] > 0.05) return { cls: 'i-heat',  txt: '🔥 TRAITEMENT THERMIQUE' };
+  if (logN < 0.05)                        return { cls: 'i-none',  txt: 'AUCUNE POPULATION' };
+  if (g.gTotal < 0.005)                   return { cls: 'i-death', txt: '↓ DÉCROISSANCE (défavorable)' };
+  if (logN >= Nmax * 0.98)                return { cls: 'i-sat',   txt: '■ SATURATION (Nmax)' };
+  if (mu >= 0.1)                          return { cls: 'i-grow',  txt: '↑ CROISSANCE POSSIBLE' };
+  return { cls: 'i-slow', txt: '↑ CROISSANCE LIMITÉE (lente)' };
+}
+function updateDiagnostic() {
+  const body = document.getElementById('diag-body');
+  if (hoverIdx < 0) {
+    body.innerHTML = '<p class="hint">Survolez la matrice pour analyser une cellule (espèce sélectionnée dans l\'outil Bactéries).</p>';
+    return;
+  }
+  const key = tool.bacteria.species, sp = DB.species[key], idx = hoverIdx;
+  const g = computeGamma(key, idx), mu = sp.growth.muOpt.value * g.gTotal, logN = populations[key][idx];
+  const it = interpret(key, idx, g, mu, logN);
+  const dr = (a, b, hi) => `<div class="drow${hi?' hi':''}"><span>${a}</span><span>${b}</span></div>`;
+  body.innerHTML =
+    dr('espèce', sp.displayName) +
+    dr('T locale', fmt(environment.temperature[idx],1)+' °C') +
+    dr('pH local', fmt(environment.pH[idx],2)) +
+    dr('aw locale', fmt(environment.aw[idx],3)) +
+    '<div class="sep"></div>' +
+    dr('gammaT', fmt(g.gT,3)) +
+    dr('gammaPH', fmt(g.gPH,3)) +
+    dr('gammaAW', fmt(g.gAW,3)) +
+    dr('gammaTotal', fmt(g.gTotal,3), true) +
+    dr('µ effectif', fmt(mu,3)+' log/h', true) +
+    dr('population', fmt(logN,2)+' log', true) +
+    `<div class="interp ${it.cls}">${it.txt}</div>`;
+}
+
+function avg(arr){ let s = 0; for (let i = 0; i < N; i++) s += arr[i]; return s / N; }
+function updatePanels() {
+  document.getElementById('avg-t').textContent  = fmt(avg(environment.temperature),1) + ' °C';
+  document.getElementById('avg-ph').textContent = fmt(avg(environment.pH),2);
+  document.getElementById('avg-aw').textContent = fmt(avg(environment.aw),3);
+  document.getElementById('sim-time').textContent = fmt(SIM.time,1) + ' h';
+  document.getElementById('pop-l-cells').textContent = colonizedCells('listeria_monocytogenes');
+  document.getElementById('pop-l-mean').textContent  = fmt(meanLog('listeria_monocytogenes'),1) + ' log';
+  document.getElementById('pop-s-cells').textContent = colonizedCells('salmonella_enterica');
+  document.getElementById('pop-s-mean').textContent  = fmt(meanLog('salmonella_enterica'),1) + ' log';
+  updateDiagnostic();
+  drawChart();
+}
+
+const chart = document.getElementById('chart');
+const cctx = chart.getContext('2d');
+function drawChart() {
+  const W = chart.width, H = chart.height, pad = 5;
+  cctx.clearRect(0, 0, W, H);
+  cctx.strokeStyle = '#152028'; cctx.lineWidth = 1;
+  cctx.fillStyle = '#3f5560'; cctx.font = '9px Consolas,monospace';
+  for (let v = 0; v <= 9; v += 3) {
+    const y = H - pad - (v / 9) * (H - 2 * pad);
+    cctx.beginPath(); cctx.moveTo(pad, y); cctx.lineTo(W - pad, y); cctx.stroke();
+    cctx.fillText(v, pad + 1, y - 1);
+  }
+  const n = history.t.length; if (n < 2) return;
+  const plot = (data, color) => {
+    cctx.strokeStyle = color; cctx.lineWidth = 1.6; cctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const x = pad + (i / (n - 1)) * (W - 2 * pad);
+      const y = H - pad - clamp01(data[i] / 9) * (H - 2 * pad);
+      i === 0 ? cctx.moveTo(x, y) : cctx.lineTo(x, y);
+    }
+    cctx.stroke();
+  };
+  plot(history.meanL, DB.species.listeria_monocytogenes.pixelColor);
+  plot(history.meanS, DB.species.salmonella_enterica.pixelColor);
+}
+
+
+/* =====================================================================
+   BOUCLE PRINCIPALE
+   ===================================================================== */
+let last = performance.now(), acc = 0;
+function loop(now) {
+  const dtms = now - last; last = now;
+  if (SIM.playing) {
+    acc += dtms;
+    const interval = SIM.baseIntervalMs / SIM.speed;
+    let guard = 0;
+    while (acc >= interval && guard < 400) { stepModel(); acc -= interval; guard++; }
+  } else acc = 0;
+  render();
+  updatePanels();
+  requestAnimationFrame(loop);
+}
+
+// Démarrage
+drawLegendSwatch('sw-l', 'listeria_monocytogenes');
+drawLegendSwatch('sw-s', 'salmonella_enterica');
+resetAll();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
