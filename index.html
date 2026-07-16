@@ -12,12 +12,15 @@
         --panel:   #0b111a;   /* panneaux */
         --panel2:  #0f141d;
         --ink:     #ddd;      /* texte */
-        --green:   #4CAF50;   /* accent principal */
+        --green:   #4CAF50;   /* accent principal (biofilm) */
         --gold:    #FFD700;   /* sélection / boutons */
         --cyan:    #00ffff;
         --purple:  #aa55ff;   /* spores */
         --orange:  #ffaa00;
         --border:  #333;
+        --glaz:    #00A9B2;   /* charte ADRIA (échelle) */
+        --glaz-l:  #5fd0d8;
+        --jaune:   #FFDD00;
     }
 
     * { box-sizing: border-box; }
@@ -54,9 +57,7 @@
         font-size: 0.8em; letter-spacing: 3px; color: var(--green);
         margin-bottom: 14px;
     }
-    .system-line .dot {
-        color: var(--green); animation: blink 1.2s infinite;
-    }
+    .system-line .dot { color: var(--green); animation: blink 1.2s infinite; }
 
     h1 {
         margin: 0; font-size: clamp(1.8em, 7vw, 3.4em); font-weight: 700;
@@ -66,20 +67,13 @@
             0 0 20px rgba(76,175,80,0.4),
             3px 3px 0 #000;
     }
-    h1 .cursor {
-        color: var(--green);
-        animation: blink 0.9s steps(1) infinite;
-    }
+    h1 .cursor { color: var(--green); animation: blink 0.9s steps(1) infinite; }
 
-    .tagline {
-        margin-top: 14px; font-size: 0.95em; color: #8899aa;
-        letter-spacing: 1px;
-    }
+    .tagline { margin-top: 14px; font-size: 0.95em; color: #8899aa; letter-spacing: 1px; }
 
     .title-bar {
         height: 4px; width: 120px; margin: 18px auto 0;
-        background: var(--gold);
-        box-shadow: 0 0 12px rgba(255,215,0,0.5);
+        background: var(--gold); box-shadow: 0 0 12px rgba(255,215,0,0.5);
     }
 
     /* --- GRILLE DE JEUX --- */
@@ -102,31 +96,24 @@
         transform: translate(-2px, -2px);
         box-shadow: 6px 6px 0 #000, 0 0 18px rgba(76,175,80,0.35);
     }
+    .game-card.echelle:hover {
+        border-color: var(--glaz);
+        box-shadow: 6px 6px 0 #000, 0 0 18px rgba(0,169,178,0.35);
+    }
 
     /* Écran d'aperçu façon canvas de jeu */
     .screen {
         position: relative; height: 150px; overflow: hidden;
         background: var(--bg);
-        border-bottom: 3px solid var(--green);
         image-rendering: pixelated;
     }
-    /* micro-organismes en pixels (reprend la palette du jeu) */
-    .microbe {
-        position: absolute; width: 10px; height: 10px;
-        image-rendering: pixelated;
-    }
-    .cell   { background: var(--green);  box-shadow: 0 0 6px var(--green); }
-    .spore  { background: var(--purple); box-shadow: 0 0 6px var(--purple); border-radius: 50%; }
-    .float1 { animation: drift1 6s ease-in-out infinite; }
-    .float2 { animation: drift2 7s ease-in-out infinite; }
-    .float3 { animation: drift3 5.5s ease-in-out infinite; }
 
     .card-body { padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
     .card-title { font-size: 1.15em; font-weight: 700; color: #fff; letter-spacing: 1px; }
     .card-version { font-size: 0.7em; color: var(--gold); letter-spacing: 1px; }
     .card-desc { font-size: 0.85em; color: #8899aa; line-height: 1.5; flex: 1; }
 
-    /* Bouton JOUER — repris du style .action-btn.selected du jeu */
+    /* Bouton JOUER */
     .play-btn {
         margin-top: 6px;
         background-color: #2a2a3a; color: #fff;
@@ -136,10 +123,67 @@
         box-shadow: 0 0 10px rgba(255,215,0,0.5);
         transition: all 0.1s;
     }
-    .game-card:hover .play-btn {
-        background-color: var(--gold); color: #000;
-        transform: scale(1.03);
+    .game-card:hover .play-btn { background-color: var(--gold); color: #000; transform: scale(1.03); }
+
+    /* ===================================================================== */
+    /* VIGNETTE 1 — BIOFILM : colonie de cellules pixel multi-espèces         */
+    /* qui poussent sur une paroi et ondulent dans le courant (vers l'aval)   */
+    /* ===================================================================== */
+    .bf-screen { border-bottom: 3px solid var(--green); background: #050b14; }
+    .bf-floor  { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: #1b1f26; }
+    .bf-floor::before { content:""; position:absolute; left:0; right:0; top:-2px; height:2px; background:#2b313b; }
+    .bf-cell {
+        position: absolute; width: 11px; height: 11px; image-rendering: pixelated;
+        box-shadow: inset -2px -2px 0 rgba(0,0,0,0.35);
     }
+    .c-g { background: #3ef03e; } /* souche initiale */
+    .c-r { background: #ff3366; } /* espèce acquise */
+    .c-b { background: #33ccff; }
+    .c-y { background: #ffcc00; }
+    .c-o { background: #ff9933; }
+    .bf-spore {
+        position: absolute; width: 9px; height: 9px; border-radius: 50%;
+        background: #b05cff; box-shadow: 0 0 6px #b05cff;
+    }
+    .sway  { animation: bfsway 2.6s ease-in-out infinite; transform-origin: bottom center; }
+    .sway2 { animation: bfsway 2.6s ease-in-out infinite; animation-delay: -1.3s; transform-origin: bottom center; }
+    .bf-free { position: absolute; top: 46px; left: 0; animation: bfdrift 5s linear infinite; }
+    /* déflexion biaisée vers la droite (aval) — jamais symétrique */
+    @keyframes bfsway  { 0%,100% { transform: translateX(0) } 50% { transform: translateX(5px) } }
+    @keyframes bfdrift {
+        0%   { transform: translateX(-20px); opacity: 0; }
+        12%  { opacity: 1; }
+        88%  { opacity: 1; }
+        100% { transform: translateX(300px); opacity: 0; }
+    }
+
+    /* ===================================================================== */
+    /* VIGNETTE 2 — ÉCHELLE : progression de tailles (virus → grain de sel)   */
+    /* teal/jaune de la charte ADRIA, avec balayage type « playhead »         */
+    /* ===================================================================== */
+    .ec-screen { border-bottom: 3px solid var(--glaz); background: #000; }
+    .ec-orb {
+        position: absolute; bottom: 44px; border-radius: 50%;
+        border: 2px solid var(--glaz-l);
+        background: rgba(0,169,178,0.22);
+        transform: translateY(50%);
+        animation: ecpulse 3.4s ease-in-out infinite;
+    }
+    .ec-orb.salt { border-color: var(--jaune); background: rgba(255,221,0,0.18); box-shadow: 0 0 10px rgba(255,221,0,0.35); }
+    .ec-scan {
+        position: absolute; top: 0; bottom: 0; width: 46px;
+        background: linear-gradient(90deg, transparent, rgba(0,169,178,0.28), transparent);
+        animation: ecscan 4.2s linear infinite;
+    }
+    .ec-baseline { position: absolute; left: 22px; right: 22px; bottom: 44px; height: 1px; background: rgba(95,208,216,0.35); }
+    .ec-label {
+        position: absolute; left: 22px; bottom: 18px;
+        font-family: 'Courier Prime', monospace; font-size: 0.62em; letter-spacing: 1px;
+        color: var(--glaz-l);
+    }
+    .ec-label .hi { color: var(--jaune); }
+    @keyframes ecpulse { 0%,100% { transform: translateY(50%) scale(0.9); opacity: 0.65; } 50% { transform: translateY(50%) scale(1.08); opacity: 1; } }
+    @keyframes ecscan  { 0% { transform: translateX(-46px) } 100% { transform: translateX(300px) } }
 
     /* --- PIED DE PAGE --- */
     footer {
@@ -149,11 +193,8 @@
     }
     footer .rights { color: #6b7684; }
 
-    /* --- ANIMATIONS --- */
+    /* --- ANIMATIONS COMMUNES --- */
     @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.15; } }
-    @keyframes drift1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(14px,10px)} }
-    @keyframes drift2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-12px,14px)} }
-    @keyframes drift3 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(10px,-12px)} }
 </style>
 </head>
 <body>
@@ -169,51 +210,71 @@
     <main class="games">
 
         <!-- ============================================================= -->
-        <!-- JEU 1 — pour ajouter un jeu, copie ce bloc <a>...</a> et      -->
-        <!-- change le href, le titre, la description et la version.       -->
+        <!-- JEU 1 — BIOFILM SIMULATOR                                      -->
         <!-- ============================================================= -->
         <a class="game-card" href="./biofilm_simulator.html">
-            <div class="screen">
-                <div class="microbe cell  float1" style="top:30px; left:40px;"></div>
-                <div class="microbe cell  float2" style="top:80px; left:120px;"></div>
-                <div class="microbe cell  float3" style="top:50px; left:200px;"></div>
-                <div class="microbe spore float2" style="top:100px; left:70px;"></div>
-                <div class="microbe spore float1" style="top:40px; left:170px;"></div>
-                <div class="microbe cell  float3" style="top:110px; left:230px;"></div>
-                <div class="microbe spore float3" style="top:20px; left:110px;"></div>
+            <div class="screen bf-screen">
+                <div class="bf-floor"></div>
+                <!-- cellule exogène qui dérive et vient s'intégrer -->
+                <div class="bf-cell c-b bf-free"></div>
+                <!-- base de la colonie (souche initiale + espèces acquises) -->
+                <div class="bf-cell c-g" style="left:78px; bottom:6px;"></div>
+                <div class="bf-cell c-g" style="left:90px; bottom:6px;"></div>
+                <div class="bf-cell c-r" style="left:102px; bottom:6px;"></div>
+                <div class="bf-cell c-g" style="left:114px; bottom:6px;"></div>
+                <div class="bf-cell c-y" style="left:126px; bottom:6px;"></div>
+                <div class="bf-cell c-o" style="left:138px; bottom:6px;"></div>
+                <!-- 2e étage -->
+                <div class="bf-cell c-g" style="left:90px; bottom:17px;"></div>
+                <div class="bf-cell c-b" style="left:102px; bottom:17px;"></div>
+                <div class="bf-cell c-r" style="left:114px; bottom:17px;"></div>
+                <div class="bf-cell c-y" style="left:126px; bottom:17px;"></div>
+                <!-- 3e étage (ondule) -->
+                <div class="bf-cell c-g sway" style="left:102px; bottom:28px;"></div>
+                <div class="bf-cell c-o sway2" style="left:114px; bottom:28px;"></div>
+                <!-- sommet (ondule + spores) -->
+                <div class="bf-cell c-r sway" style="left:108px; bottom:39px;"></div>
+                <div class="bf-spore sway2" style="left:120px; bottom:30px;"></div>
+                <div class="bf-spore sway" style="left:96px; bottom:41px;"></div>
             </div>
             <div class="card-body">
                 <div class="card-title">Biofilm Simulator</div>
-                <div class="card-version">ARCADE EDITION · V4.3</div>
+                <div class="card-version">ARCADE · V5.0</div>
                 <div class="card-desc">
-                    Fais croître ton biofilm dans la canalisation, sécrète ta matrice
-                    et survis aux cycles de nettoyage NEP. Colmate avant l'éradication.
-                </div>
-                <div class="play-btn">▶ JOUER</div>
-            </div>
-        </a>
-        
-        <a class="game-card" href="./echelle_microorganismes.html">
-            <div class="screen">
-                <div class="microbe cell  float1" style="top:30px; left:40px;"></div>
-                <div class="microbe cell  float2" style="top:80px; left:120px;"></div>
-                <div class="microbe cell  float3" style="top:50px; left:200px;"></div>
-                <div class="microbe spore float2" style="top:100px; left:70px;"></div>
-                <div class="microbe spore float1" style="top:40px; left:170px;"></div>
-                <div class="microbe cell  float3" style="top:110px; left:230px;"></div>
-                <div class="microbe spore float3" style="top:20px; left:110px;"></div>
-            </div>
-            <div class="card-body">
-                <div class="card-title">Echelle Micro-organismes</div>
-                <div class="card-version">ARCADE EDITION · V4.3</div>
-                <div class="card-desc">
-                    Petit outil pour se rendre compte de la taille des différents micro-organismes
+                    Colonise la canalisation : biofilm multi-espèces, matrice, quorum sensing,
+                    sporulation sous stress et survie aux nettoyages NEP. Clavier ou tactile.
                 </div>
                 <div class="play-btn">▶ JOUER</div>
             </div>
         </a>
 
-        <!-- JEU 2, 3... : colle ici de nouveaux blocs <a class="game-card"> -->
+        <!-- ============================================================= -->
+        <!-- JEU 2 — ÉCHELLE DU MONDE MICROBIEN                             -->
+        <!-- ============================================================= -->
+        <a class="game-card echelle" href="./echelle_microorganismes.html">
+            <div class="screen ec-screen">
+                <div class="ec-baseline"></div>
+                <!-- tailles croissantes : virus → … → grain de sel -->
+                <div class="ec-orb"      style="left:34px;  width:8px;  height:8px;  animation-delay:0s;"></div>
+                <div class="ec-orb"      style="left:64px;  width:14px; height:14px; animation-delay:.35s;"></div>
+                <div class="ec-orb"      style="left:100px; width:22px; height:22px; animation-delay:.7s;"></div>
+                <div class="ec-orb"      style="left:146px; width:32px; height:32px; animation-delay:1.05s;"></div>
+                <div class="ec-orb salt" style="left:200px; width:46px; height:46px; animation-delay:1.4s;"></div>
+                <div class="ec-scan"></div>
+                <div class="ec-label">100 nm <span class="hi">→ 0,5 mm</span></div>
+            </div>
+            <div class="card-body">
+                <div class="card-title">Échelle du Monde Microbien</div>
+                <div class="card-version">OUTIL PÉDAGOGIQUE · V1.0</div>
+                <div class="card-desc">
+                    Du virus de la grippe au grain de sel : explore les micro-organismes à leur
+                    taille réelle, avec échelle et champ de vision. Données sourcées.
+                </div>
+                <div class="play-btn">▶ EXPLORER</div>
+            </div>
+        </a>
+
+        <!-- JEU 3... : colle ici un nouveau bloc <a class="game-card"> -->
 
     </main>
 

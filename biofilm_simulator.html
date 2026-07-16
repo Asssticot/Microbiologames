@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biofilm Simulator - Arcade Edition (V4.3)</title>
+    <title>Biofilm Simulator - Arcade Edition (V5.0)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
 
@@ -14,7 +14,7 @@
             display: flex; justify-content: center; align-items: center;
             height: 100vh; overflow: hidden;
             user-select: none;
-            cursor: none; /* Cache la souris pour l'arcade */
+            cursor: default; /* Curseur visible pour cliquer les boutons (web) */
         }
 
         #arcade-container {
@@ -96,6 +96,70 @@
         
         #win-box { border-color: #4CAF50; } #win-box h2 { color: #4CAF50; }
         #lose-box { border-color: #FF3333; } #lose-box h2 { color: #FF3333; }
+
+        /* === AJOUTS : contrôles cliquables / tactile, quorum, intro, codex === */
+
+        /* Boutons d'action cliquables + état "verrouillé par le quorum" */
+        .action-btn { cursor: pointer; touch-action: none; }
+        .action-btn.qs-locked {
+            border-color: #00aab6; color: #4a7a80;
+            background-color: #0a1416; opacity: 0.75;
+            box-shadow: 2px 2px 0 #000;
+        }
+        .action-btn.qs-locked .btn-cost { color: #007a80; }
+
+        /* Bouton CODEX (info) */
+        #btn-codex {
+            background-color: #14202a; color: #00ffff; border: 3px solid #00777f;
+            padding: 6px 10px; font-size: 0.8em; cursor: pointer; align-self: center;
+            box-shadow: 2px 2px 0 #000; touch-action: none;
+        }
+        #btn-codex:hover { background-color: #1c2c38; }
+
+        /* Croix directionnelle (Phase 1, tactile/souris) */
+        #dpad {
+            position: absolute; bottom: 12px; left: 12px; z-index: 15;
+            display: none;
+            grid-template-columns: repeat(3, 46px);
+            grid-template-rows: repeat(3, 46px);
+            gap: 4px; opacity: 0.85;
+        }
+        .dpad-btn {
+            background: rgba(26,26,36,0.85); border: 2px solid #4CAF50; color: #4CAF50;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3em; box-shadow: 2px 2px 0 #000;
+            touch-action: none; user-select: none; cursor: pointer;
+        }
+        .dpad-btn:active { background: #2a2a3a; color: #fff; }
+        #dpad-up    { grid-column: 2; grid-row: 1; }
+        #dpad-left  { grid-column: 1; grid-row: 2; }
+        #dpad-right { grid-column: 3; grid-row: 2; }
+        #dpad-down  { grid-column: 2; grid-row: 3; }
+
+        /* Écran d'intro */
+        #intro-box { border-color: #00ffff; max-width: 94%; max-height: 94%; overflow-y: auto; text-align: left; }
+        #intro-box h2 { color: #00ffff; text-align: center; }
+        #intro-box p { font-size: 0.85em; line-height: 1.45; margin: 5px 0; }
+        #intro-box .goal { color: #FFD700; }
+        #intro-box .phase { color: #4CAF50; font-weight: bold; margin-top: 8px; font-size: 0.9em; }
+        #intro-box .warn { color: #FF5555; }
+
+        /* Bouton START / FERMER */
+        .big-btn {
+            display: inline-block; margin-top: 14px; cursor: pointer; touch-action: none;
+            background-color: #2a2a3a; color: #fff; border: 3px solid #FFD700;
+            padding: 10px 20px; font-family: inherit; font-weight: bold; letter-spacing: 2px;
+            box-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+        .big-btn:hover { background-color: #FFD700; color: #000; }
+
+        /* Codex */
+        #codex-box { border-color: #00ffff; max-width: 95%; max-height: 94%; overflow-y: auto; text-align: left; }
+        #codex-box h2 { color: #00ffff; text-align: center; margin-bottom: 12px; }
+        .codex-entry { margin-bottom: 12px; }
+        .codex-entry .c-title { color: #FFD700; font-weight: bold; font-size: 0.95em; }
+        .codex-entry .c-body { font-size: 0.82em; color: #cdd6e0; line-height: 1.45; }
+        .codex-entry em { color: #aa55ff; font-style: italic; }
     </style>
 </head>
 <body>
@@ -107,6 +171,8 @@
                 <div>Végétatives: <span id="ui-cells" class="stat-value">1</span></div>
                 <div>Spores: <span id="ui-spores" style="color:#aa55ff; font-weight:bold;">0</span></div>
                 <div>Cellules Protégées: <span id="ui-matrix" class="stat-value">0%</span></div>
+                <div>Quorum (QS): <span id="ui-quorum" style="color:#ffaa00; font-weight:bold;">0/10</span></div>
+                <div>Diversité: <span id="ui-diversity" style="color:#aa55ff; font-weight:bold;">1 esp.</span></div>
             </div>
             <div class="hud-panel stat-box" style="text-align: right;">
                 <div>Énergie (ATP): <span id="ui-atp" style="color:#FFD700; font-weight:bold; font-size:1.2em;">0</span></div>
@@ -137,7 +203,49 @@
                 <div class="overlay-box" id="lose-box">
                     <h2>ÉRADICATION TOTALE !</h2>
                     <p>Toutes les cellules ont été détruites par le NEP.</p>
-                    <div class="blink-text">Appuyez sur ACTION pour recommencer</div>
+                    <div class="blink-text">Touchez l'écran / Espace pour recommencer</div>
+                </div>
+            </div>
+
+            <!-- Croix directionnelle (tactile, Phase 1) -->
+            <div id="dpad">
+                <div class="dpad-btn" id="dpad-up">▲</div>
+                <div class="dpad-btn" id="dpad-left">◀</div>
+                <div class="dpad-btn" id="dpad-right">▶</div>
+                <div class="dpad-btn" id="dpad-down">▼</div>
+            </div>
+
+            <!-- Écran d'accueil / tutoriel -->
+            <div id="intro-overlay" class="overlay">
+                <div class="overlay-box" id="intro-box">
+                    <h2>BIOFILM SIMULATOR</h2>
+                    <p><span class="goal">But : colmater la canalisation à 100 %</span> en développant ton biofilm.</p>
+                    <div class="phase">◈ PHASE 1 — Adhésion</div>
+                    <p>Tu es une bactérie libre emportée par le flux. Rejoins une paroi (haut ou bas) et maintiens-toi contre elle pour t'y fixer.<br>
+                    Clavier : <b>flèches</b> · Tactile : <b>croix directionnelle</b>.</p>
+                    <div class="phase">◈ PHASE 2 — Construction</div>
+                    <p>Dépense ton <b style="color:#FFD700">ATP</b> pour croître, sécréter ta matrice, sporuler…<br>
+                    Clavier : <b>← →</b> pour choisir une action, <b>Espace</b> pour l'exécuter · Tactile : <b>touche un bouton</b>.</p>
+                    <p class="warn">⚠ Les cycles de nettoyage (NEP) détruisent les cellules non protégées. Tu perds si toutes tes cellules disparaissent.</p>
+                    <p style="font-size:0.78em; color:#8899aa;">ℹ Le bouton CODEX (en bas) explique la vraie science derrière chaque action.</p>
+                    <div style="text-align:center;"><span class="big-btn" id="btn-start">▶ COMMENCER</span></div>
+                </div>
+            </div>
+
+            <!-- Codex scientifique -->
+            <div id="codex-overlay" class="overlay">
+                <div class="overlay-box" id="codex-box">
+                    <h2>CODEX — La science du biofilm</h2>
+                    <div class="codex-entry"><div class="c-title">Adhésion</div><div class="c-body">Les bactéries s'attachent d'abord de façon réversible (forces faibles), puis irréversible via adhésines, pili et fibres curli. C'est la première étape de tout biofilm.</div></div>
+                    <div class="codex-entry"><div class="c-title">Croissance &amp; architecture</div><div class="c-body">Division cellulaire et sécrétion de matrice bâtissent une structure 3D, avec tours et canaux d'eau qui irriguent la colonie.</div></div>
+                    <div class="codex-entry"><div class="c-title">Matrice (EPS)</div><div class="c-body">Réseau de polysaccharides, protéines et ADN extracellulaire. Elle retient l'eau et les nutriments, et surtout <b>limite la diffusion des biocides</b> — d'où la résistance au nettoyage. Sa production a un coût métabolique élevé.</div></div>
+                    <div class="codex-entry"><div class="c-title">Quorum sensing</div><div class="c-body">Communication chimique dépendant de la densité de population (AHL chez les Gram−, peptides auto-inducteurs chez les Gram+, AI-2 « universel »). Au-delà d'un seuil, la colonie coordonne matrice, sporulation et dispersion. C'est pourquoi ces actions ne se débloquent qu'au quorum.</div></div>
+                    <div class="codex-entry"><div class="c-title">Sporulation</div><div class="c-body">Chez les Firmicutes, la carence et le stress déclenchent la formation d'<b>une endospore par cellule</b>, extrêmement résistante (chaleur, chimie, dessiccation), sous contrôle du quorum (Spo0A). En agro-alimentaire : <em>Bacillus cereus</em>, <em>Clostridium botulinum</em>/<em>perfringens</em>, et les thermophiles <em>Geobacillus</em>/<em>Anoxybacillus</em> du secteur laitier. Ici, plus la colonie est stressée, plus la sporulation est massive.</div></div>
+                    <div class="codex-entry"><div class="c-title">Germination</div><div class="c-body">Retour de la spore à l'état végétatif lorsque les conditions redeviennent favorables (nutriments, absence de stress).</div></div>
+                    <div class="codex-entry"><div class="c-title">Dispersion / détachement</div><div class="c-body">Des cellules se détachent pour coloniser de nouveaux sites en aval : c'est le mécanisme clé de recontamination des lignes de production.</div></div>
+                    <div class="codex-entry"><div class="c-title">Nettoyage en place (NEP/CIP)</div><div class="c-body">Chaque cycle est d'un type tiré au sort — <b>alcalin</b> (soude), <b>acide</b>, <b>oxydant</b> (acide peracétique) ou <b>thermique</b> — et chaque espèce y est plus ou moins sensible. Une matrice épaisse limite la diffusion du biocide ; un biofilm mature résiste bien mieux qu'une cellule isolée.</div></div>
+                    <div class="codex-entry"><div class="c-title">Bactéries exogènes &amp; diversité</div><div class="c-body">Les biofilms réels sont multi-espèces. Une cellule étrangère qui percute le biofilm s'y <b>intègre</b> et se reproduit comme les autres. Comme chaque espèce résiste à des NEP différentes, <b>une communauté diversifiée survit mieux</b> aux nettoyages variés — et produit plus d'ATP.</div></div>
+                    <div style="text-align:center;"><span class="big-btn" id="codex-close">FERMER</span></div>
                 </div>
             </div>
         </div>
@@ -149,6 +257,7 @@
             <div class="action-btn" id="btn-3">Sporuler <span class="btn-cost">-60 ATP</span></div>
             <div class="action-btn" id="btn-4">Germination <span class="btn-cost">-20 ATP</span></div>
             <div class="action-btn" id="btn-5">Détachement <span class="btn-cost" style="color:#00ffff;">+ Bonus ATP</span></div>
+            <div id="btn-codex">ℹ CODEX</div>
         </div>
     </div>
 
@@ -180,18 +289,59 @@ let selectedActionIndex = 0;
 const TOTAL_ACTIONS = 6;
 let joystickCooldown = 0; 
 
+// Quorum sensing : seuil de densité et actions qui en dépendent
+// (matrice, sporulation, dispersion sont régulées par la densité de population)
+const QUORUM_THRESHOLD = 10;
+const QS_GATED = [false, false, true, true, false, true];
+let resumeAfterCodex = false;
+
+// === Espèces du biofilm ===
+// sens = sensibilité à chaque type de NEP [alcalin, acide, oxydant, thermique]
+//        1 = normal, < 1 = résistant (survit mieux), > 1 = sensible (meurt plus)
+const SPECIES = [
+    { name: 'Souche initiale', color: '#3ef03e', core: '#147a14', sens: [0.6, 1.0, 1.5, 1.0] },
+    { name: 'Espèce R',        color: '#ff3366', core: '#8a1030', sens: [1.0, 0.5, 1.2, 1.5] },
+    { name: 'Espèce B',        color: '#33ccff', core: '#146a8a', sens: [1.6, 1.0, 0.8, 0.5] },
+    { name: 'Espèce J',        color: '#ffcc00', core: '#8a7010', sens: [1.0, 1.6, 0.5, 1.0] },
+    { name: 'Espèce O',        color: '#ff9933', core: '#8a4a10', sens: [0.8, 0.7, 1.5, 0.9] },
+    { name: 'Espèce W',        color: '#ffffff', core: '#999999', sens: [1.0, 1.0, 1.0, 1.0] }
+];
+
+// === Types de nettoyage (NEP/CIP) ===
+// tint = teinte du fond pendant le cycle ; matrixLoss = dégâts sur l'EPS
+const NEP_TYPES = [
+    { name: 'ALCALIN',   tint: '#0a2540', matrixLoss: 35 }, // soude
+    { name: 'ACIDE',     tint: '#2a1a05', matrixLoss: 25 },
+    { name: 'OXYDANT',   tint: '#2a0a2a', matrixLoss: 45 }, // acide peracétique : attaque fort l'EPS
+    { name: 'THERMIQUE', tint: '#3a0a05', matrixLoss: 20 }  // choc thermique
+];
+let currentNepType = 0;
+
+// Coût ATP dynamique : évolue au fil de la partie
+function getCost(i) {
+    let attachedCount = cells.filter(c => c.isAttached).length;
+    if (i === 0) return COSTS[0] + Math.floor(attachedCount / 8); // croissance un peu plus chère quand le biofilm grossit
+    if (i === 1) return COSTS[1] + Math.floor(attachedCount / 8);
+    if (i === 2) { // matrice : dépend du nombre de cellules NON protégées à enrober
+        let unprotected = cells.filter(c => c.isAttached && c.matrixHealth <= 0).length;
+        return 15 + 5 * unprotected;
+    }
+    return COSTS[i];
+}
+
 class Cell {
-    constructor(x, y, isAttached = false) {
+    constructor(x, y, isAttached = false, species = 0) {
         this.x = x; this.y = y; this.w = 16; this.h = 8;
         this.vx = 0; this.vy = 0;
         this.isAttached = isAttached; 
         this.isSpore = false; this.sporeHealth = 100;
-        this.isExo = false; // Bactérie exogène
+        this.isExo = false; // Bactérie exogène LIBRE (non encore intégrée au biofilm)
+        this.species = species; // 0 = souche initiale, >0 = espèces acquises
         this.matrixHealth = 0; // Matrice individuelle (0 = aucune protection)
-        this.color = '#3ef03e'; 
+        this.color = SPECIES[species].color; 
     }
     makeSpore() { this.isSpore = true; this.color = '#b05cff'; this.sporeHealth = 100; }
-    makeVegetative() { this.isSpore = false; this.color = '#3ef03e'; }
+    makeVegetative() { this.isSpore = false; this.color = SPECIES[this.species].color; }
 }
 
 class Bubble {
@@ -215,18 +365,17 @@ class Bubble {
 }
 
 function spawnExogenousBacteria() {
-    let colors = ['#ff3366', '#33ccff', '#ffcc00', '#ff9933', '#ffffff'];
+    let sp = 1 + Math.floor(Math.random() * (SPECIES.length - 1)); // espèces 1..5 (jamais la souche initiale)
     let yPos = PIPE_TOP + 15 + Math.random() * (PIPE_BOTTOM - PIPE_TOP - 30);
-    let exo = new Cell(-20, yPos, false);
+    let exo = new Cell(-20, yPos, false, sp);
     exo.isExo = true;
-    exo.color = colors[Math.floor(Math.random() * colors.length)];
     exo.vx = 180 + Math.random() * 100; // Arrive vite avec le flux
     cells.push(exo);
 }
 
 function initGame() {
     gameState = 'PHASE1'; atp = 10; cipActive = false; cipTimer = 0; 
-    nextCipIn = 180; firstNepPassed = false; nextExoIn = 10;
+    nextCipIn = 180; firstNepPassed = false; nextExoIn = 10; currentNepType = 0;
     adhesionProgress = 0; atpBonusTimer = 0; timeTotal = 0; selectedActionIndex = 0; joystickCooldown = 0;
     cells = [new Cell(80, 250, false)];
     bubbles = []; for(let i=0; i<45; i++) bubbles.push(new Bubble());
@@ -244,9 +393,11 @@ window.addEventListener('keydown', (e) => {
     if(keys.hasOwnProperty(e.key)) keys[e.key] = true;
     if (e.key === 'p' || e.key === 'P') togglePause();
     if (e.key === ' ' || e.key === 'Enter') {
-        if (gameState === 'WIN' || gameState === 'LOSE') initGame();
+        if (gameState === 'INTRO') startGame();
+        else if (gameState === 'WIN' || gameState === 'LOSE') initGame();
         else if (gameState === 'PHASE2') executeSelectedAction();
     }
+    if (e.key === 'Escape') closeCodex();
 });
 window.addEventListener('keyup', (e) => { if(keys.hasOwnProperty(e.key)) keys[e.key] = false; });
 
@@ -267,12 +418,16 @@ function executeSelectedAction() {
     let attached = cells.filter(c => c.isAttached);
     if(attached.length === 0) return;
 
-    // Seules nos propres cellules peuvent se reproduire
+    // Quorum sensing : certaines actions exigent une densité minimale de cellules
+    let ownAttachedCount = cells.filter(c => c.isAttached && !c.isExo).length;
+    if (QS_GATED[selectedActionIndex] && ownAttachedCount < QUORUM_THRESHOLD) return;
+
+    // Toute cellule intégrée au biofilm peut se reproduire (souche initiale ET espèces capturées)
     let ownCells = attached.filter(c => !c.isExo);
 
     switch(selectedActionIndex) {
         case 0: // Croissance H
-            if (atp >= COSTS[0] && ownCells.length > 0) {
+            if (atp >= getCost(0) && ownCells.length > 0) {
                 let shuffled = ownCells.sort(() => Math.random() - 0.5);
                 let placed = false;
                 
@@ -288,7 +443,7 @@ function executeSelectedAction() {
                             }
                         }
                         if (free && testX > 30 && testX < canvas.width - 40) {
-                            cells.push(new Cell(testX, parent.y, true));
+                            cells.push(new Cell(testX, parent.y, true, parent.species));
                             placed = true; break;
                         }
                     }
@@ -296,15 +451,15 @@ function executeSelectedAction() {
                 }
                 if (!placed) {
                     let p = ownCells[Math.floor(Math.random() * ownCells.length)];
-                    cells.push(new Cell(p.x + (Math.random() * 16 - 8), p.y + (Math.random() * 8 - 4), true));
+                    cells.push(new Cell(p.x + (Math.random() * 16 - 8), p.y + (Math.random() * 8 - 4), true, p.species));
                 }
-                atp -= COSTS[0];
+                atp -= getCost(0);
                 checkStructuralIntegrity();
             }
             break;
             
         case 1: // Croissance V
-            if (atp >= COSTS[1] && ownCells.length > 0) {
+            if (atp >= getCost(1) && ownCells.length > 0) {
                 let shuffled = ownCells.sort(() => Math.random() - 0.5);
                 let placed = false;
                 let middleY = (PIPE_TOP + PIPE_BOTTOM) / 2;
@@ -320,33 +475,37 @@ function executeSelectedAction() {
                         }
                     }
                     if (free) {
-                        cells.push(new Cell(parent.x + (Math.random() * 8 - 4), testY, true));
+                        cells.push(new Cell(parent.x + (Math.random() * 8 - 4), testY, true, parent.species));
                         placed = true; break;
                     }
                 }
                 if (!placed) {
                     let p = ownCells[Math.floor(Math.random() * ownCells.length)];
                     let dir = p.y < middleY ? 1 : -1;
-                    cells.push(new Cell(p.x + (Math.random() * 16 - 8), p.y + dir * 6, true));
+                    cells.push(new Cell(p.x + (Math.random() * 16 - 8), p.y + dir * 6, true, p.species));
                 }
-                atp -= COSTS[1];
+                atp -= getCost(1);
                 checkStructuralIntegrity();
             }
             break;
             
         case 2: // Sécréter Matrice (Cible uniquement les cellules ACTUELLEMENT présentes)
-            if (atp >= COSTS[2]) { 
-                atp -= COSTS[2]; 
-                attached.forEach(c => c.matrixHealth = 100); // L'EPS englobe tout ce qui est là, même les exo
+            if (atp >= getCost(2)) { 
+                atp -= getCost(2); 
+                attached.forEach(c => c.matrixHealth = 100); // L'EPS englobe toute la communauté
             }
             break;
             
-        case 3: // Sporuler
-            if (atp >= COSTS[3]) {
+        case 3: // Sporuler — réponse au stress (carence énergétique ou nettoyage)
+            if (atp >= getCost(3)) {
                 let vegCells = ownCells.filter(c => !c.isSpore);
-                let numToTransform = Math.floor(vegCells.length * (0.30 + Math.random() * 0.10));
+                // La sporulation est déclenchée par le stress : sous carence (ATP bas)
+                // ou pendant un nettoyage, la conversion en endospores est bien plus massive.
+                let stressed = (atp < 50) || cipActive;
+                let frac = stressed ? (0.55 + Math.random() * 0.15) : (0.15 + Math.random() * 0.10);
+                let numToTransform = Math.floor(vegCells.length * frac);
                 if (numToTransform > 0) {
-                    atp -= COSTS[3];
+                    atp -= getCost(3);
                     vegCells.sort(() => Math.random() - 0.5);
                     for (let i = 0; i < numToTransform; i++) vegCells[i].makeSpore();
                 }
@@ -355,8 +514,8 @@ function executeSelectedAction() {
             
         case 4: // Germination
             let spores = ownCells.filter(c => c.isSpore);
-            if (atp >= COSTS[4] && spores.length > 0) {
-                atp -= COSTS[4];
+            if (atp >= getCost(4) && spores.length > 0) {
+                atp -= getCost(4);
                 spores.forEach(s => s.makeVegetative());
             }
             break;
@@ -375,21 +534,28 @@ function executeSelectedAction() {
 function updateMenuUI() {
     let ownCells = cells.filter(c => c.isAttached && !c.isExo);
     let canAfford = [
-        atp >= COSTS[0] && ownCells.length > 0,
-        atp >= COSTS[1] && ownCells.length > 0,
-        atp >= COSTS[2],
-        atp >= COSTS[3] && ownCells.filter(c=>!c.isSpore).length > 0,
-        atp >= COSTS[4] && ownCells.filter(c=>c.isSpore).length > 0,
+        atp >= getCost(0) && ownCells.length > 0,
+        atp >= getCost(1) && ownCells.length > 0,
+        atp >= getCost(2),
+        atp >= getCost(3) && ownCells.filter(c=>!c.isSpore).length > 0,
+        atp >= getCost(4) && ownCells.filter(c=>c.isSpore).length > 0,
         ownCells.length > 0 
     ];
 
+    let quorum = ownCells.length >= QUORUM_THRESHOLD;
+
+    // Coûts dynamiques affichés en direct sur les boutons concernés
+    document.querySelector('#btn-0 .btn-cost').innerText = '-' + getCost(0) + ' ATP';
+    document.querySelector('#btn-1 .btn-cost').innerText = '-' + getCost(1) + ' ATP';
+    document.querySelector('#btn-2 .btn-cost').innerText = '-' + getCost(2) + ' ATP';
+
     for (let i = 0; i < TOTAL_ACTIONS; i++) {
         let btn = document.getElementById('btn-' + i);
-        if (i === selectedActionIndex) btn.classList.add('selected');
-        else btn.classList.remove('selected');
+        btn.classList.toggle('selected', i === selectedActionIndex);
 
-        if (!canAfford[i]) btn.classList.add('disabled');
-        else btn.classList.remove('disabled');
+        let locked = QS_GATED[i] && !quorum;         // verrouillé faute de quorum
+        btn.classList.toggle('qs-locked', locked);
+        btn.classList.toggle('disabled', !canAfford[i] || locked);
     }
 }
 
@@ -441,6 +607,7 @@ function gameLoop(timestamp) {
         update(dt);
     }
     draw();
+    document.getElementById('dpad').style.display = (gameState === 'PHASE1') ? 'grid' : 'none';
     requestAnimationFrame(gameLoop);
 }
 
@@ -460,6 +627,7 @@ function update(dt) {
                     if (a.isAttached && a !== c) {
                         if (Math.abs(c.x - a.x) < 18 && Math.abs(c.y - a.y) < 10) {
                             c.isAttached = true; c.vx = 0; c.vy = 0;
+                            c.isExo = false; // INTÉGRÉE : devient un membre à part entière (se reproduit, produit de l'ATP)
                             checkStructuralIntegrity(); 
                             break;
                         }
@@ -501,6 +669,7 @@ function update(dt) {
             if (adhesionProgress >= ADHESION_TIME_REQUIRED) {
                 player.isAttached = true; player.vx = 0; player.vy = 0;
                 gameState = 'PHASE2';
+                for (let k in keys) keys[k] = false; // évite une direction restée "enfoncée" (tactile)
                 document.getElementById('ui-status').innerText = 'Biofilm Fixé';
                 document.getElementById('ui-status').style.color = '#4CAF50';
             }
@@ -542,7 +711,7 @@ function update(dt) {
             }
         }
 
-        // Calcul de l'ATP Individuel (Les Exo occupent de l'espace mais ne donnent rien)
+        // Calcul de l'ATP Individuel (les exogènes LIBRES ne comptent pas ; les intégrées oui)
         let attached = cells.filter(c => c.isAttached);
         let atpGain = 0;
         
@@ -563,8 +732,12 @@ function update(dt) {
             atpGain += (surfaceLibre * 0.6 * (1 - blockage));
         }
 
+        // Récompense de la DIVERSITÉ : une communauté variée est plus performante (+8% d'ATP par espèce supplémentaire)
+        let distinctSpecies = new Set(attached.filter(c => !c.isExo && !c.isSpore).map(c => c.species)).size;
+        let diversityBonus = 1 + 0.08 * Math.max(0, distinctSpecies - 1);
+
         let bonusMult = (atpBonusTimer > 0) ? 3 : 1;
-        atp += atpGain * bonusMult * dt;
+        atp += atpGain * bonusMult * diversityBonus * dt;
         if (atpBonusTimer > 0) atpBonusTimer -= dt;
 
         // Gestion du Nettoyage (NEP/CIP)
@@ -573,14 +746,17 @@ function update(dt) {
             if (nextCipIn <= 0) {
                 cipActive = true; cipTimer = 7; cipEventTriggered = false;
                 firstNepPassed = true; // Cache le timer
+                currentNepType = Math.floor(Math.random() * NEP_TYPES.length); // type de nettoyage tiré au sort
+                document.getElementById('cip-warning').innerText = '⚠️ NEP ' + NEP_TYPES[currentNepType].name + ' EN COURS !';
                 document.getElementById('cip-warning').style.display = 'block';
             }
         } else {
             cipTimer -= dt;
             if (!cipEventTriggered) {
-                // Choc initial sur les cellules protégées
+                // Choc initial : dégradation de l'EPS (variable selon le type) et des spores
+                let mLoss = NEP_TYPES[currentNepType].matrixLoss;
                 for (let c of cells) {
-                    if (c.matrixHealth > 0) c.matrixHealth = Math.max(0, c.matrixHealth - 30);
+                    if (c.matrixHealth > 0) c.matrixHealth = Math.max(0, c.matrixHealth - mLoss);
                     if (c.isSpore) { c.sporeHealth -= 10; if(c.sporeHealth <= 0) c.isAttached = false; }
                 }
                 cipEventTriggered = true;
@@ -592,7 +768,10 @@ function update(dt) {
             } else {
                 for (let c of cells) {
                     if (c.isAttached && !c.isSpore) {
-                        let deathChance = c.matrixHealth > 0 ? 0.05 : 0.80; 
+                        // La sensibilité dépend de l'ESPÈCE et du TYPE de NEP → la diversité protège la communauté
+                        let sens = SPECIES[c.species].sens[currentNepType];
+                        let base = c.matrixHealth > 0 ? 0.05 : 0.80;
+                        let deathChance = Math.min(0.98, base * sens);
                         if (Math.random() < deathChance * dt) c.isAttached = false;
                     }
                 }
@@ -615,6 +794,21 @@ function update(dt) {
     document.getElementById('ui-cells').innerText = ownCells;
     document.getElementById('ui-spores').innerText = ownSpores;
     document.getElementById('ui-matrix').innerText = matrixPercent + '%';
+
+    // Indicateur de quorum sensing
+    let ownTotalAttached = ownCells + ownSpores;
+    let quorumEl = document.getElementById('ui-quorum');
+    if (ownTotalAttached >= QUORUM_THRESHOLD) {
+        quorumEl.innerText = 'ACTIF ✓'; quorumEl.style.color = '#00ffff';
+    } else {
+        quorumEl.innerText = ownTotalAttached + '/' + QUORUM_THRESHOLD; quorumEl.style.color = '#ffaa00';
+    }
+
+    // Indicateur de diversité (nombre d'espèces intégrées)
+    let nSpecies = new Set(cells.filter(c => c.isAttached && !c.isExo).map(c => c.species)).size;
+    let divEl = document.getElementById('ui-diversity');
+    divEl.innerText = nSpecies + (nSpecies > 1 ? ' esp. ✦' : ' esp.');
+    divEl.style.color = nSpecies > 1 ? '#cc88ff' : '#888';
     
     // Timer caché après la première NEP
     let timerDisplay = firstNepPassed ? '?' : Math.max(0, Math.floor(nextCipIn)) + 's';
@@ -623,7 +817,7 @@ function update(dt) {
 }
 
 function draw() {
-    ctx.fillStyle = cipActive ? '#500505' : '#031222';
+    ctx.fillStyle = cipActive ? NEP_TYPES[currentNepType].tint : '#031222';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.fillStyle = '#2b313b';
@@ -656,11 +850,15 @@ function draw() {
 
     for (let c of cells) {
         let sway = 0;
-        if (c.isAttached && gameState !== 'PAUSE') {
-            // Effet vent physique : Amplitude dépend de l'éloignement de la paroi
+        // Seules les cellules NON protégées (sans matrice) et non sporulées ondulent dans le courant.
+        // La matrice fige la cellule ; les spores sont dormantes et rigides.
+        if (c.isAttached && !c.isSpore && c.matrixHealth <= 0 && gameState !== 'PAUSE') {
             let distToWall = Math.min(Math.abs(c.y - PIPE_TOP), Math.abs(c.y - PIPE_BOTTOM));
-            let swayAmp = Math.max(0, (distToWall - 12) * 0.15); // Immobile près de la paroi (< 12px)
-            sway = Math.sin(timeTotal * 5 + c.y / 15 + c.x / 20) * swayAmp;
+            let amp = Math.max(0, (distToWall - 12) * 0.18); // rien près de la paroi, plus la cellule est haute plus elle plie
+            let flow = cipActive ? 2.2 : 1;                  // le flux s'intensifie pendant le nettoyage
+            let bend = amp * 1.6 * flow;                     // déflexion MOYENNE vers l'aval (droite) → courant asymétrique
+            let osc  = Math.sin(timeTotal * 4 + c.y / 15 + c.x / 25) * amp * 0.6; // ondulation autour de cette déflexion
+            sway = bend + osc;                               // toujours penché vers la droite (jamais symétrique)
         }
         
         ctx.fillStyle = '#000000'; ctx.fillRect(Math.floor(c.x + 1 + sway), Math.floor(c.y + 1), c.w, c.h);
@@ -668,17 +866,83 @@ function draw() {
         
         // Détail interne
         if (!c.isExo) {
-            ctx.fillStyle = c.isSpore ? '#ffffff' : '#147a14'; 
+            ctx.fillStyle = c.isSpore ? '#ffffff' : SPECIES[c.species].core; // cœur teinté selon l'espèce
             ctx.fillRect(Math.floor(c.x + 4 + sway), Math.floor(c.y + 2), c.w - 8, c.h - 4);
         } else {
-            // Les exogènes ont un design interne un peu différent (lignes)
+            // Les exogènes LIBRES (non intégrées) ont un design interne différent (ligne)
             ctx.fillStyle = '#000000';
             ctx.fillRect(Math.floor(c.x + 6 + sway), Math.floor(c.y), 4, c.h);
         }
     }
 }
 
-initGame();
+/* ===================== Contrôles souris / tactile ===================== */
+
+function startGame() {
+    document.getElementById('intro-overlay').style.display = 'none';
+    initGame();
+}
+
+function openCodex() {
+    if (gameState === 'PHASE1' || gameState === 'PHASE2') {
+        previousState = gameState;
+        gameState = 'PAUSE';           // met le jeu en pause pendant la lecture
+        resumeAfterCodex = true;
+    }
+    document.getElementById('codex-overlay').style.display = 'flex';
+}
+function closeCodex() {
+    let ov = document.getElementById('codex-overlay');
+    if (ov.style.display === 'none' || ov.style.display === '') return;
+    ov.style.display = 'none';
+    if (resumeAfterCodex) {
+        gameState = previousState;
+        lastTime = performance.now();
+        resumeAfterCodex = false;
+    }
+}
+
+// Boutons d'action : un appui = sélectionne ET exécute l'action
+for (let i = 0; i < TOTAL_ACTIONS; i++) {
+    document.getElementById('btn-' + i).addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        if (gameState !== 'PHASE2') return;
+        selectedActionIndex = i;
+        executeSelectedAction();
+        updateMenuUI();
+    });
+}
+
+// Croix directionnelle : maintien enfoncé = déplacement (Phase 1)
+function bindHold(id, key) {
+    let el = document.getElementById(id);
+    let press   = (e) => { e.preventDefault(); keys[key] = true; };
+    let release = (e) => { e.preventDefault(); keys[key] = false; };
+    el.addEventListener('pointerdown', press);
+    el.addEventListener('pointerup', release);
+    el.addEventListener('pointerleave', release);
+    el.addEventListener('pointercancel', release);
+}
+bindHold('dpad-up', 'ArrowUp');
+bindHold('dpad-down', 'ArrowDown');
+bindHold('dpad-left', 'ArrowLeft');
+bindHold('dpad-right', 'ArrowRight');
+
+// Écrans (intro, codex, victoire, défaite, pause)
+document.getElementById('btn-start').addEventListener('pointerdown', (e) => { e.preventDefault(); startGame(); });
+document.getElementById('btn-codex').addEventListener('pointerdown', (e) => { e.preventDefault(); openCodex(); });
+document.getElementById('codex-close').addEventListener('pointerdown', (e) => { e.preventDefault(); closeCodex(); });
+document.getElementById('codex-overlay').addEventListener('pointerdown', (e) => { if (e.target.id === 'codex-overlay') closeCodex(); });
+document.getElementById('win-overlay').addEventListener('pointerdown', (e) => { e.preventDefault(); initGame(); });
+document.getElementById('lose-overlay').addEventListener('pointerdown', (e) => { e.preventDefault(); initGame(); });
+document.getElementById('pause-overlay').addEventListener('pointerdown', (e) => { e.preventDefault(); togglePause(); });
+
+// Démarrage : on affiche d'abord l'écran d'accueil / tutoriel
+function showStartScreen() {
+    gameState = 'INTRO';
+    document.getElementById('intro-overlay').style.display = 'flex';
+}
+showStartScreen();
 </script>
 </body>
 </html>
