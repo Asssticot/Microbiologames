@@ -89,6 +89,11 @@
     #scalewrap{left:16px;bottom:132px} #srcbtn{right:16px;bottom:132px}
     #controls{padding:14px 16px 16px}
   }
+  .lang-sw{display:inline-flex; margin:0 0 10px 8px; pointer-events:auto; vertical-align:top;}
+  .lang-sw button{font-family:var(--mono); font-size:11px; font-weight:bold; cursor:pointer; letter-spacing:.1em;
+    color:var(--glaz-l); background:rgba(0,0,0,.4); border:1px solid var(--gris-d); padding:5px 8px;}
+  .lang-sw button:first-child{border-right:none;}
+  .lang-sw button.on{color:#04191c; background:var(--glaz); border-color:var(--glaz);}
 </style>
 </head>
 <body>
@@ -96,7 +101,8 @@
 
 <div class="hud" id="topleft">
   <a href="./index.html" style="pointer-events:auto;display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--glaz-l);text-decoration:none;border:1px solid var(--gris-d);padding:5px 9px;margin-bottom:10px;">← Index</a>
-  <div id="eyebrow">Échelle du monde microbien</div>
+  <span class="lang-sw" id="langSw"><button data-l="fr">FR</button><button data-l="en">EN</button></span>
+  <div id="eyebrow" data-i18n="es_eyebrow">Échelle du monde microbien</div>
   <div id="name">—</div>
   <div id="sci">—</div>
   <div id="size">—</div>
@@ -105,7 +111,7 @@
 </div>
 
 <div class="hud" id="fov">
-  <div class="lab">Champ de vision</div>
+  <div class="lab" data-i18n="es_fov">Champ de vision</div>
   <div class="val" id="fovval">—</div>
 </div>
 
@@ -114,7 +120,7 @@
   <div id="scalelab">—</div>
 </div>
 
-<button id="srcbtn">SOURCES ⌵</button>
+<button id="srcbtn" data-i18n="es_srcbtn">SOURCES ⌵</button>
 
 <div id="controls">
   <div class="cbar">
@@ -130,15 +136,76 @@
 
 <div id="panel">
   <div class="pinner">
-    <h2>Tailles &amp; sources</h2>
-    <div class="sub">Source unique autorisée · publications à comité de lecture</div>
+    <h2 data-i18n="es_paneltitle">Tailles &amp; sources</h2>
+    <div class="sub" data-i18n="es_panelsub">Source unique autorisée · publications à comité de lecture</div>
     <table id="srctable"></table>
-    <p class="foot">Les valeurs affichées sont des ordres de grandeur représentatifs (les tailles réelles varient selon l'espèce, la souche et les conditions de culture). Le rendu est schématique : formes, couleurs et détails internes sont stylisés et ne constituent pas une reconstruction morphologique exacte. Charte graphique ADRIA — bleu glaz #00A9B2, jaune tournesol #FFDD00.</p>
-    <button id="closep">FERMER</button>
+    <p class="foot" data-i18n="es_panelfoot">Les valeurs affichées sont des ordres de grandeur représentatifs (les tailles réelles varient selon l'espèce, la souche et les conditions de culture). Le rendu est schématique : formes, couleurs et détails internes sont stylisés et ne constituent pas une reconstruction morphologique exacte. Charte graphique ADRIA — bleu glaz #00A9B2, jaune tournesol #FFDD00.</p>
+    <button id="closep" data-i18n="es_close">FERMER</button>
   </div>
 </div>
 
 <script>
+
+/* ===================== INTERNATIONALISATION (FR / EN) ===================== */
+const ORG_EN = {
+  virus:    { name:'Flu virus', sci:'Influenza A virion', sizeTxt:'≈ 100 nm',
+    detail:'Pleomorphic enveloped virion, 80–120 nm across, studded with spikes (haemagglutinin, neuraminidase).',
+    src:'Harris et al., PNAS 2006 · Katz et al., PLOS ONE 2014 (cryo-ET)' },
+  ecoli:    { name:'Bacterium', sci:'Escherichia coli', sizeTxt:'≈ 2 µm',
+    detail:'Rod-shaped bacillus, ~2 µm long and ~0.5 µm wide.',
+    src:'Kubitschek, J. Bacteriol. 1990 · NRC "Size Limits of Very Small Microorganisms"' },
+  conidie:  { name:'Mould spore', sci:'Penicillium (conidium)', sizeTxt:'≈ 3 µm',
+    detail:'Globose asexual conidium, 2.5–5 µm, with an often ornamented wall (warts, ridges).',
+    src:'Martínez & Ramírez, Antonie van Leeuwenhoek 1983 (SEM)' },
+  chlorella:{ name:'Microalga', sci:'Chlorella vulgaris', sizeTxt:'≈ 3–4 µm',
+    detail:'Spherical single-celled green alga, 2–10 µm, with a cup-shaped chloroplast.',
+    src:'Zhang et al., RSC Adv. 2017 · Chioccioli et al., PLOS ONE 2014' },
+  levure:   { name:'Yeast', sci:'Saccharomyces cerevisiae', sizeTxt:'≈ 4–6 µm',
+    detail:'Ovoid yeast dividing by budding; haploid ~4 µm, diploid ~6 µm.',
+    src:'Milo & Phillips, Cell Biology by the Numbers 2015 · Fukuda, Sci. Rep. 2023' },
+  animale:  { name:'Animal cell', sci:'Typical eukaryotic cell', sizeTxt:'≈ 10–30 µm',
+    detail:'Typical animal cell 10–30 µm: nucleus, mitochondria, cytoplasm without a wall.',
+    src:'Atlas of Plant & Animal Histology, Univ. Vigo (histological consensus)' },
+  vegetale: { name:'Plant cell', sci:'Parenchyma', sizeTxt:'≈ 50–100 µm',
+    detail:'Parenchyma cell: thick wall, large central vacuole, peripheral chloroplasts.',
+    src:'Volkov & Beilby (ion-transport rev.) 2014 · Encyclopaedia Britannica' },
+  paramecie:{ name:'Protozoan', sci:'Paramecium caudatum', sizeTxt:'≈ 200–300 µm',
+    detail:'Slipper-shaped ciliate, 170–330 µm, entirely covered with cilia beating in waves.',
+    src:'Wichtermann 1986 · Kreutz et al., PMC 2012 (morpho-molecular)' },
+  sel:      { name:'Grain of salt', sci:'Sodium chloride (NaCl)', sizeTxt:'≈ 0.3–0.5 mm',
+    detail:'Cubic table-salt crystal, 0.3–0.5 mm per side. Macroscopic landmark of the journey.',
+    src:'Salt granulometry (sieving) 2025 · Int. J. Rock Mech. Min. Sci. 2021' }
+};
+const I18N = {
+ fr: {
+  es_eyebrow:"Échelle du monde microbien", es_fov:"Champ de vision", es_srcbtn:"SOURCES ⌵",
+  es_paneltitle:"Tailles & sources", es_panelsub:"Source unique autorisée · publications à comité de lecture",
+  es_close:"FERMER", es_playaria:"Lecture / pause", es_srclabel:"Source :",
+  es_panelfoot:"Les valeurs affichées sont des ordres de grandeur représentatifs (les tailles réelles varient selon l'espèce, la souche et les conditions de culture). Le rendu est schématique : formes, couleurs et détails internes sont stylisés et ne constituent pas une reconstruction morphologique exacte. Charte graphique ADRIA — bleu glaz #00A9B2, jaune tournesol #FFDD00.",
+ },
+ en: {
+  es_eyebrow:"Scale of the microbial world", es_fov:"Field of view", es_srcbtn:"SOURCES ⌵",
+  es_paneltitle:"Sizes & sources", es_panelsub:"Single approved source · peer-reviewed publications",
+  es_close:"CLOSE", es_playaria:"Play / pause", es_srclabel:"Source:",
+  es_panelfoot:"Displayed values are representative orders of magnitude (real sizes vary with species, strain and culture conditions). The rendering is schematic: shapes, colours and internal details are stylised and are not an exact morphological reconstruction. ADRIA visual identity — glaz blue #00A9B2, sunflower yellow #FFDD00.",
+ },
+};
+let lang = "fr";
+try { lang = localStorage.getItem('mbg_lang') || (navigator.language || 'fr').slice(0,2); } catch(e) {}
+if (!I18N[lang]) lang = "fr";
+const t = (key) => (I18N[lang] && I18N[lang][key]) ?? I18N.fr[key] ?? key;
+const Lf = (o, field) => (lang === 'en' && ORG_EN[o.key] && ORG_EN[o.key][field]) ? ORG_EN[o.key][field] : o[field];
+function applyLang(){
+  document.querySelectorAll('[data-i18n]').forEach(n => { n.textContent = t(n.getAttribute('data-i18n')); });
+  document.documentElement.lang = lang;
+  document.querySelectorAll('#langSw button').forEach(b => b.classList.toggle('on', b.dataset.l === lang));
+  try { var p = document.getElementById('play'); if (p) p.setAttribute('aria-label', t('es_playaria')); } catch(e){}
+  try { if (typeof buildSources === 'function') buildSources(); } catch(e){}
+  try { if (typeof tickEls !== 'undefined') { [...tickEls].forEach((el,i)=>{ var nm=Lf(ORG[i],'name'); el.textContent=(lang==='fr')?nm.replace('Cellule ','C. '):nm; }); } } catch(e){}
+  try { if (typeof updateHUD === 'function') { curHero = -1; updateHUD(); } } catch(e){}
+}
+function setLang(l){ if(!I18N[l]) return; lang=l; try{ localStorage.setItem('mbg_lang',l); }catch(e){} applyLang(); }
+
 "use strict";
 /* ============================================================
    DONNÉES — tailles issues de publications à comité de lecture
@@ -612,8 +679,8 @@ function updateHUD(){
   const o=ORG[hero];
   [elName,elSci,elSize,elDetail,elSrc].forEach(e=>e.style.opacity=0);
   setTimeout(()=>{
-    elName.textContent=o.name; elSci.textContent=o.sci; elSize.textContent=o.sizeTxt;
-    elDetail.textContent=o.detail; elSrc.innerHTML='<b>Source :</b> '+o.src;
+    elName.textContent=Lf(o,'name'); elSci.textContent=Lf(o,'sci'); elSize.textContent=Lf(o,'sizeTxt');
+    elDetail.textContent=Lf(o,'detail'); elSrc.innerHTML='<b>'+t('es_srclabel')+'</b> '+Lf(o,'src');
     [elName,elSci,elSize,elDetail,elSrc].forEach(e=>e.style.opacity='');
   },120);
   [...tickEls].forEach((el,i)=>el.classList.toggle('on',i===hero));
@@ -674,7 +741,7 @@ window.addEventListener('keydown',e=>{
 // ticks cliquables
 const ticks=document.getElementById('ticks'); let tickEls=[];
 ORG.forEach((o,i)=>{
-  const span=document.createElement('span'); span.textContent=o.name.replace('Cellule ','C. ');
+  const span=document.createElement('span'); { let _nm=Lf(o,'name'); span.textContent=(lang==='fr')?_nm.replace('Cellule ','C. '):_nm; }
   span.addEventListener('click',()=>{ sTarget=i/(N-1); slider.value=Math.round(sTarget*1000); playing=false; setPlayIcon(); });
   ticks.appendChild(span);
 });
@@ -683,13 +750,16 @@ tickEls=ticks.children;
 // panneau sources
 const panel=document.getElementById('panel'), srcbtn=document.getElementById('srcbtn');
 const srctable=document.getElementById('srctable');
-srctable.innerHTML=ORG.map(o=>
-  `<tr><td>${o.name}<br><i style="font-weight:400;font-style:italic;color:#888">${o.sci}</i></td>
-   <td>${o.sizeTxt}</td><td>${o.src}</td></tr>`).join('');
+function buildSources(){ srctable.innerHTML=ORG.map(o=>
+  `<tr><td>${Lf(o,'name')}<br><i style="font-weight:400;font-style:italic;color:#888">${Lf(o,'sci')}</i></td>
+   <td>${Lf(o,'sizeTxt')}</td><td>${Lf(o,'src')}</td></tr>`).join(''); }
+buildSources();
 srcbtn.addEventListener('click',()=>panel.classList.add('open'));
 document.getElementById('closep').addEventListener('click',()=>panel.classList.remove('open'));
 panel.addEventListener('click',e=>{ if(e.target===panel) panel.classList.remove('open'); });
 
+document.querySelectorAll('#langSw button').forEach(b => b.onclick = () => setLang(b.dataset.l));
+applyLang();
 setPlayIcon();
 requestAnimationFrame(frame);
 </script>
