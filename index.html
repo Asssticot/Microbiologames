@@ -105,6 +105,10 @@
         border-color: #FFDD00;
         box-shadow: 6px 6px 0 #000, 0 0 18px rgba(255,221,0,0.35);
     }
+    .game-card.streak:hover {
+        border-color: #d8b45f;
+        box-shadow: 6px 6px 0 #000, 0 0 18px rgba(216,180,95,0.40);
+    }
 
     /* Écran d'aperçu façon canvas de jeu */
     .screen {
@@ -189,6 +193,53 @@
     .ec-label .hi { color: var(--jaune); }
     @keyframes ecpulse { 0%,100% { transform: translateY(50%) scale(0.9); opacity: 0.65; } 50% { transform: translateY(50%) scale(1.08); opacity: 1; } }
     @keyframes ecscan  { 0% { transform: translateX(-46px) } 100% { transform: translateX(300px) } }
+
+    /* ===================================================================== */
+    /* VIGNETTE 5 — RATE MY STREAK : une boite de Petri ou le geste           */
+    /* d'isolement se trace en 4 zones, puis les colonies isolees poussent    */
+    /* ===================================================================== */
+    .rs-screen { background: #070a0e; }
+    .rs-svg { width: 100%; height: 100%; display: block; shape-rendering: crispEdges; }
+    .rs-agar   { fill: #c9a961; }
+    .rs-rim    { fill: #2b3540; }
+    .rs-rim2   { fill: #3a4450; }
+    .rs-path {
+        fill: none; stroke: #a1823c; stroke-width: 3;
+        stroke-linecap: square; stroke-linejoin: miter;
+        stroke-dasharray: 240; opacity: 0;
+    }
+    .rs-q1 { animation: rs-d1 7s linear infinite; }
+    .rs-q2 { animation: rs-d2 7s linear infinite; }
+    .rs-q3 { animation: rs-d3 7s linear infinite; }
+    .rs-q4 { animation: rs-d4 7s linear infinite; }
+    @keyframes rs-d1 { 0%,2%{stroke-dashoffset:240;opacity:1} 16%{stroke-dashoffset:0;opacity:1}
+                       92%{stroke-dashoffset:0;opacity:1} 99%,100%{stroke-dashoffset:0;opacity:0} }
+    @keyframes rs-d2 { 0%,16%{stroke-dashoffset:240;opacity:1} 30%{stroke-dashoffset:0;opacity:1}
+                       92%{stroke-dashoffset:0;opacity:1} 99%,100%{stroke-dashoffset:0;opacity:0} }
+    @keyframes rs-d3 { 0%,30%{stroke-dashoffset:240;opacity:1} 44%{stroke-dashoffset:0;opacity:1}
+                       92%{stroke-dashoffset:0;opacity:1} 99%,100%{stroke-dashoffset:0;opacity:0} }
+    @keyframes rs-d4 { 0%,44%{stroke-dashoffset:240;opacity:1} 58%{stroke-dashoffset:0;opacity:1}
+                       92%{stroke-dashoffset:0;opacity:1} 99%,100%{stroke-dashoffset:0;opacity:0} }
+
+    /* nappe confluente de la premiere zone */
+    .rs-lawn { fill: #efe6cb; opacity: 0; animation: rs-lawn 7s linear infinite; }
+    @keyframes rs-lawn { 0%,58%{opacity:0} 72%{opacity:.95} 92%{opacity:.95} 99%,100%{opacity:0} }
+
+    /* colonies isolees de la derniere zone */
+    .rs-col { fill: #f4ecd4; transform-box: fill-box; transform-origin: center;
+              transform: scale(0); opacity: 0; animation: rs-pop 7s linear infinite; }
+    @keyframes rs-pop { 0%,60%{transform:scale(0);opacity:0} 74%{transform:scale(1);opacity:1}
+                        92%{transform:scale(1);opacity:1} 99%,100%{opacity:0} }
+    .rs-ring { fill: none; stroke: #00AAB6; stroke-width: 1.5; opacity: 0;
+               animation: rs-ring 7s linear infinite; }
+    @keyframes rs-ring { 0%,78%{opacity:0} 84%{opacity:.9} 92%{opacity:.9} 99%,100%{opacity:0} }
+
+    .rs-label {
+        position: absolute; left: 16px; bottom: 12px;
+        font-family: 'Courier Prime', monospace; font-size: 0.62em; letter-spacing: 1px;
+        color: #d8b45f;
+    }
+    .rs-label .hi { color: var(--jaune); }
 
     /* ===================================================================== */
     /* VIGNETTE 3 — MICROBIO PAINT : colonies peintes sur une matrice qui      */
@@ -450,7 +501,52 @@
             </div>
         </a>
 
-        <!-- JEU 5... : colle ici un nouveau bloc <a class="game-card"> -->
+        <!-- ============================================================= -->
+        <!-- JEU 5 — RATE MY STREAK                                         -->
+        <!-- ============================================================= -->
+        <a class="game-card streak" href="./rate-my-streak.html">
+            <div class="screen rs-screen">
+                <svg class="rs-svg" viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg"
+                     preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                    <circle class="rs-rim2" cx="130" cy="75" r="66"/>
+                    <circle class="rs-rim"  cx="130" cy="75" r="63"/>
+                    <circle class="rs-agar" cx="130" cy="75" r="61"/>
+
+                    <!-- zone 1 : confluente -->
+                    <path class="rs-lawn" d="M86,40 L118,28 L92,54 L124,42 L98,66 L128,54 L104,76 Z"/>
+
+                    <!-- le geste, zone par zone -->
+                    <path class="rs-path rs-q1" d="M86,40 L118,28 L92,54 L124,42 L98,66"/>
+                    <path class="rs-path rs-q2" d="M104,60 L156,38 L112,74 L166,52 L120,88"/>
+                    <path class="rs-path rs-q3" d="M118,82 L180,74 L126,100 L186,92 L134,112"/>
+                    <path class="rs-path rs-q4" d="M132,106 L184,118 L140,126 L176,132"/>
+
+                    <!-- colonies isolees -->
+                    <circle class="rs-col" cx="141" cy="109" r="3"/>
+                    <circle class="rs-col" cx="157" cy="113" r="3"/>
+                    <circle class="rs-col" cx="172" cy="117" r="3"/>
+                    <circle class="rs-col" cx="149" cy="124" r="3"/>
+                    <circle class="rs-col" cx="164" cy="129" r="3"/>
+                    <circle class="rs-ring" cx="141" cy="109" r="6"/>
+                    <circle class="rs-ring" cx="157" cy="113" r="6"/>
+                    <circle class="rs-ring" cx="172" cy="117" r="6"/>
+                    <circle class="rs-ring" cx="149" cy="124" r="6"/>
+                    <circle class="rs-ring" cx="164" cy="129" r="6"/>
+                </svg>
+                <div class="rs-label">log 9 <span class="hi">&#8594; colonies isolees</span></div>
+            </div>
+            <div class="card-body">
+                <div class="card-title" data-i18n="title_streak">Rate My Streak</div>
+                <div class="card-version" data-i18n="v_streak">GESTE TECHNIQUE &middot; V1.0</div>
+                <div class="card-desc" data-i18n="d_streak">
+                    Trace ton isolement au doigt sur la gelose, puis regarde les colonies pousser
+                    en accelere. L'anse part a 10&#8313; UFC et s'epuise a chaque millimetre.
+                </div>
+                <div class="play-btn" data-i18n="play_streak">&#9654; ISOLER</div>
+            </div>
+        </a>
+
+        <!-- JEU 6... : colle ici un nouveau bloc <a class="game-card"> -->
 
     </main>
 
@@ -472,13 +568,17 @@ const I18N = {
     tagline: "Des mini-jeux pour apprendre et expérimenter la microbiologie. Insérez une pièce.",
     title_biofilm: "Biofilm Simulator", title_fighter: "Microbes Fighter",
     title_paint: "Microbio Paint", title_echelle: "Échelle du Monde Microbien",
+    title_streak: "Rate My Streak",
     v_biofilm: "ARCADE · V5.0", v_fighter: "VERSUS · V1.0",
     v_paint: "SANDBOX PRÉDICTIF · V1.0", v_echelle: "OUTIL PÉDAGOGIQUE · V1.0",
+    v_streak: "GESTE TECHNIQUE · V1.0",
     d_biofilm: "Colonise la canalisation : biofilm multi-espèces, matrice, quorum sensing, sporulation sous stress et survie aux nettoyages NEP. Clavier ou tactile.",
     d_fighter: "Duel en 2 manches : la bactérie « vicieuse » attaque à distance, le microbiologiste riposte avec les barrières (pH, aw, thermique). 1-2 joueurs ou CPU.",
     d_paint: "Peins Listeria et Salmonella sur une matrice alimentaire, règle température, pH et aw, puis simule croissance et traitement thermique. Courbe en direct.",
     d_echelle: "Du virus de la grippe au grain de sel : explore les micro-organismes à leur taille réelle, avec échelle et champ de vision. Données sourcées.",
+    d_streak: "Trace ton isolement au doigt sur la gélose, puis regarde les colonies pousser en accéléré. L'anse part à 10⁹ UFC et s'épuise à chaque millimètre parcouru ; recroiser une strie en reprend la moitié.",
     play_biofilm: "▶ JOUER", play_fighter: "▶ COMBAT", play_paint: "▶ SIMULER", play_echelle: "▶ EXPLORER",
+    play_streak: "▶ ISOLER",
     foot1: "© 2026 Nicolas Nguyen Van Long — Tous droits réservés.",
     foot2: "Jouable gratuitement. Reproduction ou réutilisation du code interdite sans autorisation.",
   },
@@ -487,13 +587,17 @@ const I18N = {
     tagline: "Mini games to learn and experiment meicrobiology. Insert a coin.",
     title_biofilm: "Biofilm Simulator", title_fighter: "Microbes Fighter",
     title_paint: "Microbio Paint", title_echelle: "Scale of the Microbial World",
+    title_streak: "Rate My Streak",
     v_biofilm: "ARCADE · V5.0", v_fighter: "VERSUS · V1.0",
     v_paint: "PREDICTIVE SANDBOX · V1.0", v_echelle: "EDUCATIONAL TOOL · V1.0",
+    v_streak: "TECHNIQUE DRILL · V1.0",
     d_biofilm: "Colonise the pipe: multi-species biofilm, matrix, quorum sensing, stress-induced sporulation and survival through CIP cleanings. Keyboard or touch.",
     d_fighter: "Best-of-three duel: the “vicious” bacterium attacks at range, the microbiologist strikes back with barriers (pH, aw, heat). 1-2 players or CPU.",
     d_paint: "Paint Listeria and Salmonella on a food matrix, set temperature, pH and aw, then simulate growth and heat treatment. Live growth curve.",
     d_echelle: "From the flu virus to a grain of salt: explore micro-organisms at their real size, with scale bar and field of view. Sourced data.",
+    d_streak: "Draw your streak on the agar with a finger, then watch the colonies grow in fast-forward. The loop starts at 10⁹ CFU and empties with every millimetre travelled; re-crossing a streak takes half of what is there.",
     play_biofilm: "▶ PLAY", play_fighter: "▶ FIGHT", play_paint: "▶ SIMULATE", play_echelle: "▶ EXPLORE",
+    play_streak: "▶ ISOLATE",
     foot1: "© 2026 Nicolas Nguyen Van Long — All rights reserved.",
     foot2: "Free to play. Copying or reuse of the code is prohibited without permission.",
   },
