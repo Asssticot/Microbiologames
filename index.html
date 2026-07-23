@@ -99,7 +99,7 @@
         transform: translate(-2px, -2px);
         box-shadow: 6px 6px 0 #000, 0 0 18px rgba(76,175,80,0.35);
     }
-    .game-card.echelle:hover {
+    .game-card.echelle:hover, .game-card.wetmount:hover {
         border-color: var(--glaz);
         box-shadow: 6px 6px 0 #000, 0 0 18px rgba(0,169,178,0.35);
     }
@@ -123,7 +123,7 @@
         image-rendering: pixelated;
     }
 
-    /* --- Badge de plateforme recommandée (pixel art) --- */
+    /* --- Badge de plateforme recommandée --- */
     .plat-badge {
         position: absolute; top: 8px; right: 8px; z-index: 3;
         display: flex; gap: 5px; align-items: center;
@@ -159,211 +159,106 @@
     .game-card:hover .play-btn { background-color: var(--gold); color: #000; transform: scale(1.03); }
 
     /* ===================================================================== */
-    /* VIGNETTE 1 — BIOFILM : colonie de cellules pixel multi-espèces         */
-    /* qui poussent sur une paroi et ondulent dans le courant (vers l'aval)   */
+    /* VIGNETTES EXISTANTES (Biofilm, Fighter, Paint, Echelle, Streak, Gram) */
     /* ===================================================================== */
     .bf-screen { border-bottom: 3px solid var(--green); background: #050b14; }
     .bf-floor  { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: #1b1f26; }
     .bf-floor::before { content:""; position:absolute; left:0; right:0; top:-2px; height:2px; background:#2b313b; }
-    .bf-cell {
-        position: absolute; width: 11px; height: 11px; image-rendering: pixelated;
-        box-shadow: inset -2px -2px 0 rgba(0,0,0,0.35);
-    }
-    .c-g { background: #3ef03e; } /* souche initiale */
-    .c-r { background: #ff3366; } /* espèce acquise */
-    .c-b { background: #33ccff; }
-    .c-y { background: #ffcc00; }
-    .c-o { background: #ff9933; }
-    .bf-spore {
-        position: absolute; width: 9px; height: 9px; border-radius: 50%;
-        background: #b05cff; box-shadow: 0 0 6px #b05cff;
-    }
+    .bf-cell { position: absolute; width: 11px; height: 11px; image-rendering: pixelated; box-shadow: inset -2px -2px 0 rgba(0,0,0,0.35); }
+    .c-g { background: #3ef03e; } .c-r { background: #ff3366; } .c-b { background: #33ccff; } .c-y { background: #ffcc00; } .c-o { background: #ff9933; }
+    .bf-spore { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: #b05cff; box-shadow: 0 0 6px #b05cff; }
     .sway  { animation: bfsway 2.6s ease-in-out infinite; transform-origin: bottom center; }
     .sway2 { animation: bfsway 2.6s ease-in-out infinite; animation-delay: -1.3s; transform-origin: bottom center; }
     .bf-free { position: absolute; top: 46px; left: 0; animation: bfdrift 5s linear infinite; }
-    /* déflexion biaisée vers la droite (aval) — jamais symétrique */
     @keyframes bfsway  { 0%,100% { transform: translateX(0) } 50% { transform: translateX(5px) } }
-    @keyframes bfdrift {
-        0%   { transform: translateX(-20px); opacity: 0; }
-        12%  { opacity: 1; }
-        88%  { opacity: 1; }
-        100% { transform: translateX(300px); opacity: 0; }
-    }
+    @keyframes bfdrift { 0% { transform: translateX(-20px); opacity: 0; } 12% { opacity: 1; } 88% { opacity: 1; } 100% { transform: translateX(300px); opacity: 0; } }
 
-    /* ===================================================================== */
-    /* VIGNETTE 2 — ÉCHELLE : progression de tailles (virus → grain de sel)   */
-    /* teal/jaune (palette de l'app), avec balayage type « playhead »         */
-    /* ===================================================================== */
     .ec-screen { border-bottom: 3px solid var(--glaz); background: #000; }
-    .ec-orb {
-        position: absolute; bottom: 44px; border-radius: 50%;
-        border: 2px solid var(--glaz-l);
-        background: rgba(0,169,178,0.22);
-        transform: translateY(50%);
-        animation: ecpulse 3.4s ease-in-out infinite;
-    }
+    .ec-orb { position: absolute; bottom: 44px; border-radius: 50%; border: 2px solid var(--glaz-l); background: rgba(0,169,178,0.22); transform: translateY(50%); animation: ecpulse 3.4s ease-in-out infinite; }
     .ec-orb.salt { border-color: var(--jaune); background: rgba(255,221,0,0.18); box-shadow: 0 0 10px rgba(255,221,0,0.35); }
-    .ec-scan {
-        position: absolute; top: 0; bottom: 0; width: 46px;
-        background: linear-gradient(90deg, transparent, rgba(0,169,178,0.28), transparent);
-        animation: ecscan 4.2s linear infinite;
-    }
+    .ec-scan { position: absolute; top: 0; bottom: 0; width: 46px; background: linear-gradient(90deg, transparent, rgba(0,169,178,0.28), transparent); animation: ecscan 4.2s linear infinite; }
     .ec-baseline { position: absolute; left: 22px; right: 22px; bottom: 44px; height: 1px; background: rgba(95,208,216,0.35); }
-    .ec-label {
-        position: absolute; left: 22px; bottom: 18px;
-        font-family: 'Courier Prime', monospace; font-size: 0.62em; letter-spacing: 1px;
-        color: var(--glaz-l);
-    }
+    .ec-label { position: absolute; left: 22px; bottom: 18px; font-family: 'Courier Prime', monospace; font-size: 0.62em; letter-spacing: 1px; color: var(--glaz-l); }
     .ec-label .hi { color: var(--jaune); }
     @keyframes ecpulse { 0%,100% { transform: translateY(50%) scale(0.9); opacity: 0.65; } 50% { transform: translateY(50%) scale(1.08); opacity: 1; } }
     @keyframes ecscan  { 0% { transform: translateX(-46px) } 100% { transform: translateX(300px) } }
 
-    /* ===================================================================== */
-    /* VIGNETTE 5 — RATE MY STREAK : une boite de Petri ou le geste           */
-    /* d'isolement se trace en 4 zones, puis les colonies isolees poussent    */
-    /* ===================================================================== */
     .rs-screen { background: #070a0e; }
     .rs-svg { width: 100%; height: 100%; display: block; shape-rendering: crispEdges; }
-    .rs-agar   { fill: #c9a961; }
-    .rs-rim    { fill: #2b3540; }
-    .rs-rim2   { fill: #3a4450; }
-    .rs-path {
-        fill: none; stroke: #a1823c; stroke-width: 3;
-        stroke-linecap: square; stroke-linejoin: miter;
-        stroke-dasharray: 240; opacity: 0;
-    }
-    .rs-q1 { animation: rs-d1 7s linear infinite; }
-    .rs-q2 { animation: rs-d2 7s linear infinite; }
-    .rs-q3 { animation: rs-d3 7s linear infinite; }
-    .rs-q4 { animation: rs-d4 7s linear infinite; }
-    @keyframes rs-d1 { 0%,2%{stroke-dashoffset:240;opacity:1} 16%{stroke-dashoffset:0;opacity:1}
-                       92%{stroke-dashoffset:0;opacity:1} 99%,100%{stroke-dashoffset:0;opacity:0} }
-    @keyframes rs-d2 { 0%,16%{stroke-dashoffset:240;opacity:1} 30%{stroke-dashoffset:0;opacity:1}
-                       92%{stroke-dashoffset:0;opacity:1} 99%,100%{stroke-dashoffset:0;opacity:0} }
-    @keyframes rs-d3 { 0%,30%{stroke-dashoffset:240;opacity:1} 44%{stroke-dashoffset:0;opacity:1}
-                       92%{stroke-dashoffset:0;opacity:1} 99%,100%{stroke-dashoffset:0;opacity:0} }
-    @keyframes rs-d4 { 0%,44%{stroke-dashoffset:240;opacity:1} 58%{stroke-dashoffset:0;opacity:1}
-                       92%{stroke-dashoffset:0;opacity:1} 99%,100%{stroke-dashoffset:0;opacity:0} }
-
-    /* nappe confluente de la premiere zone */
+    .rs-agar   { fill: #c9a961; } .rs-rim    { fill: #2b3540; } .rs-rim2   { fill: #3a4450; }
+    .rs-path { fill: none; stroke: #a1823c; stroke-width: 3; stroke-linecap: square; stroke-linejoin: miter; stroke-dasharray: 240; opacity: 0; }
+    .rs-q1 { animation: rs-d1 7s linear infinite; } .rs-q2 { animation: rs-d2 7s linear infinite; } .rs-q3 { animation: rs-d3 7s linear infinite; } .rs-q4 { animation: rs-d4 7s linear infinite; }
+    @keyframes rs-d1 { 0%,2%{stroke-dashoffset:240;opacity:1} 16%{stroke-dashoffset:0;opacity:1} 92%{stroke-dashoffset:0;opacity:1} 99%,100%{stroke-dashoffset:0;opacity:0} }
+    @keyframes rs-d2 { 0%,16%{stroke-dashoffset:240;opacity:1} 30%{stroke-dashoffset:0;opacity:1} 92%{stroke-dashoffset:0;opacity:1} 99%,100%{stroke-dashoffset:0;opacity:0} }
+    @keyframes rs-d3 { 0%,30%{stroke-dashoffset:240;opacity:1} 44%{stroke-dashoffset:0;opacity:1} 92%{stroke-dashoffset:0;opacity:1} 99%,100%{stroke-dashoffset:0;opacity:0} }
+    @keyframes rs-d4 { 0%,44%{stroke-dashoffset:240;opacity:1} 58%{stroke-dashoffset:0;opacity:1} 92%{stroke-dashoffset:0;opacity:1} 99%,100%{stroke-dashoffset:0;opacity:0} }
     .rs-lawn { fill: #efe6cb; opacity: 0; animation: rs-lawn 7s linear infinite; }
     @keyframes rs-lawn { 0%,58%{opacity:0} 72%{opacity:.95} 92%{opacity:.95} 99%,100%{opacity:0} }
-
-    /* colonies isolees de la derniere zone */
-    .rs-col { fill: #f4ecd4; transform-box: fill-box; transform-origin: center;
-              transform: scale(0); opacity: 0; animation: rs-pop 7s linear infinite; }
-    @keyframes rs-pop { 0%,60%{transform:scale(0);opacity:0} 74%{transform:scale(1);opacity:1}
-                        92%{transform:scale(1);opacity:1} 99%,100%{opacity:0} }
-    .rs-ring { fill: none; stroke: #00AAB6; stroke-width: 1.5; opacity: 0;
-               animation: rs-ring 7s linear infinite; }
+    .rs-col { fill: #f4ecd4; transform-box: fill-box; transform-origin: center; transform: scale(0); opacity: 0; animation: rs-pop 7s linear infinite; }
+    @keyframes rs-pop { 0%,60%{transform:scale(0);opacity:0} 74%{transform:scale(1);opacity:1} 92%{transform:scale(1);opacity:1} 99%,100%{opacity:0} }
+    .rs-ring { fill: none; stroke: #00AAB6; stroke-width: 1.5; opacity: 0; animation: rs-ring 7s linear infinite; }
     @keyframes rs-ring { 0%,78%{opacity:0} 84%{opacity:.9} 92%{opacity:.9} 99%,100%{opacity:0} }
-
-    .rs-label {
-        position: absolute; left: 16px; bottom: 12px;
-        font-family: 'Courier Prime', monospace; font-size: 0.62em; letter-spacing: 1px;
-        color: #d8b45f;
-    }
+    .rs-label { position: absolute; left: 16px; bottom: 12px; font-family: 'Courier Prime', monospace; font-size: 0.62em; letter-spacing: 1px; color: #d8b45f; }
     .rs-label .hi { color: var(--jaune); }
 
-    /* ===================================================================== */
-    /* VIGNETTE 6 — PERFECT GRAM : bactéries violettes et roses flottantes   */
-    /* ===================================================================== */
     .pg-screen { background: #07090d; border-bottom: 3px solid #7b4fd0; }
     .pg-bac { position: absolute; opacity: 0.9; }
     .pg-bac.gram-pos { width: 12px; height: 12px; border-radius: 50%; background: #7b4fd0; box-shadow: 0 0 6px rgba(123,79,208,0.6); animation: pg-float 3s ease-in-out infinite; }
     .pg-bac.gram-neg { width: 18px; height: 9px; border-radius: 4px; background: #e0554f; box-shadow: 0 0 6px rgba(224,85,79,0.6); animation: pg-float 3.5s ease-in-out infinite reverse; }
     @keyframes pg-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 
-    /* ===================================================================== */
-    /* VIGNETTE 3 — MICROBIO PAINT : colonies peintes sur une matrice qui      */
-    /* poussent (Listeria bleue + Salmonella orange) + courbe de croissance    */
-    /* ===================================================================== */
-    .mp-screen {
-        border-bottom: 3px solid var(--glaz);
-        background:
-            repeating-linear-gradient(0deg,  transparent 0 13px, rgba(0,169,178,0.09) 13px 14px),
-            repeating-linear-gradient(90deg, transparent 0 13px, rgba(0,169,178,0.09) 13px 14px),
-            #14100b; /* teinte de la matrice alimentaire du canvas réel */
-    }
-    .mp-cell {
-        position: absolute; width: 12px; height: 12px; image-rendering: pixelated;
-        transform: scale(0.2); opacity: 0;
-        animation: mpgrow 3.2s ease-in-out infinite;
-    }
-    .mp-l { background: #60a5fa; box-shadow: 0 0 5px rgba(96,165,250,0.55); }  /* Listeria (Gram +) */
-    .mp-s { background: #fb923c; box-shadow: 0 0 5px rgba(251,146,60,0.55); }  /* Salmonella (Gram −) */
-    @keyframes mpgrow {
-        0%   { transform: scale(0.2); opacity: 0; }
-        30%  { transform: scale(1);   opacity: 1; }
-        82%  { transform: scale(1);   opacity: 1; }
-        100% { transform: scale(0.2); opacity: 0; }
-    }
-    /* courbe de croissance qui se trace en boucle */
+    .mp-screen { border-bottom: 3px solid var(--glaz); background: repeating-linear-gradient(0deg,  transparent 0 13px, rgba(0,169,178,0.09) 13px 14px), repeating-linear-gradient(90deg, transparent 0 13px, rgba(0,169,178,0.09) 13px 14px), #14100b; }
+    .mp-cell { position: absolute; width: 12px; height: 12px; image-rendering: pixelated; transform: scale(0.2); opacity: 0; animation: mpgrow 3.2s ease-in-out infinite; }
+    .mp-l { background: #60a5fa; box-shadow: 0 0 5px rgba(96,165,250,0.55); }
+    .mp-s { background: #fb923c; box-shadow: 0 0 5px rgba(251,146,60,0.55); }
+    @keyframes mpgrow { 0% { transform: scale(0.2); opacity: 0; } 30% { transform: scale(1); opacity: 1; } 82% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.2); opacity: 0; } }
     .mp-curve { position: absolute; right: 10px; bottom: 8px; width: 96px; height: 46px; }
     .mp-curve .axis { stroke: rgba(95,208,216,0.4); stroke-width: 1; fill: none; }
-    .mp-curve .line {
-        fill: none; stroke: var(--jaune); stroke-width: 2;
-        stroke-dasharray: 160; stroke-dashoffset: 160;
-        animation: mpdraw 3.2s ease-in-out infinite;
-    }
+    .mp-curve .line { fill: none; stroke: var(--jaune); stroke-width: 2; stroke-dasharray: 160; stroke-dashoffset: 160; animation: mpdraw 3.2s ease-in-out infinite; }
     @keyframes mpdraw { 0% { stroke-dashoffset: 160; } 55%,100% { stroke-dashoffset: 0; } }
 
-    /* ===================================================================== */
-    /* VIGNETTE 4 — MICROBES FIGHTER : duel bactérie (verte) vs               */
-    /* microbiologiste (teal), barres de vie et « VS » arcade                 */
-    /* ===================================================================== */
-    .mf-screen {
-        border-bottom: 3px solid #FFDD00;
-        background: radial-gradient(120% 120% at 50% 30%, #14282f 0%, #0b1418 75%);
-    }
-    /* barres de vie */
+    .mf-screen { border-bottom: 3px solid #FFDD00; background: radial-gradient(120% 120% at 50% 30%, #14282f 0%, #0b1418 75%); }
     .mf-hp { position: absolute; top: 12px; height: 7px; background: #04090b; border: 1px solid #000; box-shadow: inset 0 0 0 1px #1d3b45; overflow: hidden; }
-    .mf-hp.l { left: 14px; width: 96px; }
-    .mf-hp.r { right: 14px; width: 96px; }
+    .mf-hp.l { left: 14px; width: 96px; } .mf-hp.r { right: 14px; width: 96px; }
     .mf-hp > i { display: block; height: 100%; }
     .mf-hp.l > i { background: linear-gradient(180deg,#7be05a,#3f9c27); float: right; animation: mfhpL 3.2s ease-in-out infinite; }
     .mf-hp.r > i { background: linear-gradient(180deg,#4fd6e6,#0a8f9c); animation: mfhpR 3.2s ease-in-out infinite; }
     @keyframes mfhpL { 0%,40% { width: 100%; } 55%,70% { width: 62%; } 100% { width: 100%; } }
     @keyframes mfhpR { 0%,20% { width: 100%; } 35%,55% { width: 74%; } 100% { width: 100%; } }
-
-    /* combattants */
     .mf-fighter { position: absolute; bottom: 26px; image-rendering: pixelated; }
     .mf-bact  { left: 44px;  animation: mfLungeR 3.2s ease-in-out infinite; }
     .mf-sci   { right: 44px; animation: mfLungeL 3.2s ease-in-out infinite; }
-    /* bactérie : corps vert + flagelle + yeux rouges */
     .mf-bact .body { width: 30px; height: 20px; background: #57b83a; border-radius: 10px; box-shadow: inset -3px -3px 0 rgba(0,0,0,0.3); position: relative; }
     .mf-bact .body::before { content:""; position:absolute; left:-9px; top:7px; width:9px; height:2px; background:#3f9c27; box-shadow:0 4px 0 #3f9c27; }
     .mf-bact .eye { position:absolute; top:5px; width:3px; height:3px; background:#e0343f; }
     .mf-bact .eye.a { right:6px; } .mf-bact .eye.b { right:12px; }
-    /* microbiologiste : tête + blouse teal + fiole jaune */
     .mf-sci .head { width: 11px; height: 11px; border-radius: 50%; background: #DEF0F3; margin: 0 auto; }
     .mf-sci .coat { width: 22px; height: 20px; background: #00AAB6; border-radius: 4px 4px 2px 2px; box-shadow: inset 3px -3px 0 rgba(0,0,0,0.25); position: relative; }
     .mf-sci .flask { position:absolute; left:-7px; top:6px; width:6px; height:9px; background:#FFDD00; box-shadow:0 0 5px rgba(255,221,0,0.6); }
     @keyframes mfLungeR { 0%,45% { transform: translateX(0); } 58% { transform: translateX(12px); } 72%,100% { transform: translateX(0); } }
     @keyframes mfLungeL { 0%,20% { transform: translateX(0); } 33% { transform: translateX(-12px); } 47%,100% { transform: translateX(0); } }
-
-    /* VS + étincelle de choc */
-    .mf-vs {
-        position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-        font-family: 'Press Start 2P', monospace; font-size: 17px; color: #FFDD00;
-        text-shadow: 2px 2px 0 #000, 0 0 10px rgba(0,170,182,0.5);
-        animation: mfvs 3.2s ease-in-out infinite;
-    }
-    .mf-spark {
-        position: absolute; top: 50%; left: 50%; width: 26px; height: 26px;
-        transform: translate(-50%,-50%) scale(0); border-radius: 50%;
-        background: radial-gradient(circle, rgba(255,221,0,0.9), transparent 70%);
-        animation: mfspark 3.2s ease-in-out infinite;
-    }
-    @keyframes mfvs    { 0%,50% { transform: translate(-50%,-50%) scale(1); } 60% { transform: translate(-50%,-50%) scale(1.25); } 75%,100% { transform: translate(-50%,-50%) scale(1); } }
+    .mf-vs { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-family: 'Press Start 2P', monospace; font-size: 17px; color: #FFDD00; text-shadow: 2px 2px 0 #000, 0 0 10px rgba(0,170,182,0.5); animation: mfvs 3.2s ease-in-out infinite; }
+    .mf-spark { position: absolute; top: 50%; left: 50%; width: 26px; height: 26px; transform: translate(-50%,-50%) scale(0); border-radius: 50%; background: radial-gradient(circle, rgba(255,221,0,0.9), transparent 70%); animation: mfspark 3.2s ease-in-out infinite; }
+    @keyframes mfvs { 0%,50% { transform: translate(-50%,-50%) scale(1); } 60% { transform: translate(-50%,-50%) scale(1.25); } 75%,100% { transform: translate(-50%,-50%) scale(1); } }
     @keyframes mfspark { 0%,52% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 60% { transform: translate(-50%,-50%) scale(1.1); opacity: 1; } 72%,100% { transform: translate(-50%,-50%) scale(0); opacity: 0; } }
 
+    /* ===================================================================== */
+    /* VIGNETTE 7 — WET MOUNT : champ microscopique avec réticule et flou    */
+    /* ===================================================================== */
+    .wm-screen { background: #07090d; border-bottom: 3px solid #00AAB6; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .wm-field { position: relative; width: 130px; height: 130px; border-radius: 50%; background: #e6e3d7; box-shadow: 0 0 0 40px rgba(12,18,24,0.9), inset 0 0 12px rgba(0,0,0,0.5); }
+    .wm-bac { position: absolute; background: #87837a; border-radius: 4px; animation: wm-brownian 3s infinite ease-in-out alternate; }
+    .wm-bac.b1 { width: 14px; height: 5px; top: 40px; left: 35px; transform: rotate(20deg); }
+    .wm-bac.b2 { width: 5px; height: 5px; top: 75px; left: 85px; filter: blur(1.5px); animation-delay: -1s; }
+    .wm-bac.b3 { width: 22px; height: 6px; top: 65px; left: 45px; transform: rotate(-15deg); filter: blur(2.5px); animation-delay: -2s; }
+    .wm-crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 24px; height: 24px; }
+    .wm-crosshair::before, .wm-crosshair::after { content: ""; position: absolute; background: #00AAB6; }
+    .wm-crosshair::before { top: 11px; left: 0; width: 24px; height: 2px; }
+    .wm-crosshair::after { top: 0; left: 11px; width: 2px; height: 24px; }
+    @keyframes wm-brownian { 0% { margin-top: 0; margin-left: 0; } 100% { margin-top: 4px; margin-left: -5px; } }
+
     /* --- PIED DE PAGE --- */
-    footer {
-        margin-top: 44px; text-align: center;
-        font-size: 0.75em; color: #55606e; line-height: 1.8;
-        position: relative; z-index: 2;
-    }
+    footer { margin-top: 44px; text-align: center; font-size: 0.75em; color: #55606e; line-height: 1.8; position: relative; z-index: 2; }
     footer .rights { color: #6b7684; }
 
     /* --- ANIMATIONS COMMUNES --- */
@@ -406,24 +301,19 @@
             <div class="screen bf-screen">
                 <div class="plat-badge" data-i18n-title="plat_desktop" title=""><svg class="ico-desk" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true"><path d="M0 2h16v10H0z" fill="#5fd0d8"/><path d="M2 4h12v6H2z" fill="#0d3038"/><path d="M3 5h6v1H3z" fill="#9ff0f6"/><path d="M3 7h8v1H3z" fill="#9ff0f6"/><path d="M3 8h4v1H3z" fill="#FFDD00"/><path d="M6 12h4v2H6z" fill="#3fb3bb"/><path d="M3 14h10v2H3z" fill="#5fd0d8"/></svg></div>
                 <div class="bf-floor"></div>
-                <!-- cellule exogène qui dérive et vient s'intégrer -->
                 <div class="bf-cell c-b bf-free"></div>
-                <!-- base de la colonie (souche initiale + espèces acquises) -->
                 <div class="bf-cell c-g" style="left:78px; bottom:6px;"></div>
                 <div class="bf-cell c-g" style="left:90px; bottom:6px;"></div>
                 <div class="bf-cell c-r" style="left:102px; bottom:6px;"></div>
                 <div class="bf-cell c-g" style="left:114px; bottom:6px;"></div>
                 <div class="bf-cell c-y" style="left:126px; bottom:6px;"></div>
                 <div class="bf-cell c-o" style="left:138px; bottom:6px;"></div>
-                <!-- 2e étage -->
                 <div class="bf-cell c-g" style="left:90px; bottom:17px;"></div>
                 <div class="bf-cell c-b" style="left:102px; bottom:17px;"></div>
                 <div class="bf-cell c-r" style="left:114px; bottom:17px;"></div>
                 <div class="bf-cell c-y" style="left:126px; bottom:17px;"></div>
-                <!-- 3e étage (ondule) -->
                 <div class="bf-cell c-g sway" style="left:102px; bottom:28px;"></div>
                 <div class="bf-cell c-o sway2" style="left:114px; bottom:28px;"></div>
-                <!-- sommet (ondule + spores) -->
                 <div class="bf-cell c-r sway" style="left:108px; bottom:39px;"></div>
                 <div class="bf-spore sway2" style="left:120px; bottom:30px;"></div>
                 <div class="bf-spore sway" style="left:96px; bottom:41px;"></div>
@@ -431,10 +321,7 @@
             <div class="card-body">
                 <div class="card-title" data-i18n="title_biofilm">Biofilm Simulator</div>
                 <div class="card-version" data-i18n="v_biofilm">ARCADE · V5.0</div>
-                <div class="card-desc" data-i18n="d_biofilm">
-                    Colonise la canalisation : biofilm multi-espèces, matrice, quorum sensing,
-                    sporulation sous stress et survie aux nettoyages NEP. Clavier ou tactile.
-                </div>
+                <div class="card-desc" data-i18n="d_biofilm">Colonise la canalisation : biofilm multi-espèces, matrice, quorum sensing, sporulation sous stress et survie aux nettoyages NEP. Clavier ou tactile.</div>
                 <div class="play-btn" data-i18n="play_biofilm">▶ JOUER</div>
             </div>
         </a>
@@ -445,31 +332,16 @@
         <a class="game-card fighter" href="./microbes-fighter.html">
             <div class="screen mf-screen">
                 <div class="plat-badge" data-i18n-title="plat_desktop" title=""><svg class="ico-desk" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true"><path d="M0 2h16v10H0z" fill="#5fd0d8"/><path d="M2 4h12v6H2z" fill="#0d3038"/><path d="M3 5h6v1H3z" fill="#9ff0f6"/><path d="M3 7h8v1H3z" fill="#9ff0f6"/><path d="M3 8h4v1H3z" fill="#FFDD00"/><path d="M6 12h4v2H6z" fill="#3fb3bb"/><path d="M3 14h10v2H3z" fill="#5fd0d8"/></svg></div>
-                <!-- barres de vie -->
                 <div class="mf-hp l"><i></i></div>
                 <div class="mf-hp r"><i></i></div>
-                <!-- bactérie (verte, à gauche) -->
-                <div class="mf-fighter mf-bact">
-                    <div class="body">
-                        <span class="eye a"></span><span class="eye b"></span>
-                    </div>
-                </div>
-                <!-- microbiologiste (teal, à droite) -->
-                <div class="mf-fighter mf-sci">
-                    <div class="head"></div>
-                    <div class="coat"><span class="flask"></span></div>
-                </div>
-                <!-- choc + VS -->
-                <div class="mf-spark"></div>
-                <div class="mf-vs">VS</div>
+                <div class="mf-fighter mf-bact"><div class="body"><span class="eye a"></span><span class="eye b"></span></div></div>
+                <div class="mf-fighter mf-sci"><div class="head"></div><div class="coat"><span class="flask"></span></div></div>
+                <div class="mf-spark"></div><div class="mf-vs">VS</div>
             </div>
             <div class="card-body">
                 <div class="card-title" data-i18n="title_fighter">Microbes Fighter</div>
                 <div class="card-version" data-i18n="v_fighter">VERSUS · V1.0</div>
-                <div class="card-desc" data-i18n="d_fighter">
-                    Duel en 2 manches : la bactérie « vicieuse » attaque à distance, le
-                    microbiologiste riposte avec les barrières (pH, aw, thermique). 1-2 joueurs ou CPU.
-                </div>
+                <div class="card-desc" data-i18n="d_fighter">Duel en 2 manches : la bactérie « vicieuse » attaque à distance, le microbiologiste riposte avec les barrières (pH, aw, thermique). 1-2 joueurs ou CPU.</div>
                 <div class="play-btn" data-i18n="play_fighter">▶ COMBAT</div>
             </div>
         </a>
@@ -480,21 +352,18 @@
         <a class="game-card echelle" href="./microbio-paint.html">
             <div class="screen mp-screen">
                 <div class="plat-badge" data-i18n-title="plat_desktop" title=""><svg class="ico-desk" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true"><path d="M0 2h16v10H0z" fill="#5fd0d8"/><path d="M2 4h12v6H2z" fill="#0d3038"/><path d="M3 5h6v1H3z" fill="#9ff0f6"/><path d="M3 7h8v1H3z" fill="#9ff0f6"/><path d="M3 8h4v1H3z" fill="#FFDD00"/><path d="M6 12h4v2H6z" fill="#3fb3bb"/><path d="M3 14h10v2H3z" fill="#5fd0d8"/></svg></div>
-                <!-- colonie Listeria (bleue) qui pousse -->
                 <div class="mp-cell mp-l" style="left:56px;  top:56px; animation-delay:0s;"></div>
                 <div class="mp-cell mp-l" style="left:70px;  top:56px; animation-delay:.25s;"></div>
                 <div class="mp-cell mp-l" style="left:56px;  top:70px; animation-delay:.4s;"></div>
                 <div class="mp-cell mp-l" style="left:70px;  top:70px; animation-delay:.15s;"></div>
                 <div class="mp-cell mp-l" style="left:84px;  top:70px; animation-delay:.55s;"></div>
                 <div class="mp-cell mp-l" style="left:70px;  top:84px; animation-delay:.7s;"></div>
-                <!-- colonie Salmonella (orange) qui pousse -->
                 <div class="mp-cell mp-s" style="left:140px; top:56px; animation-delay:.1s;"></div>
                 <div class="mp-cell mp-s" style="left:154px; top:56px; animation-delay:.35s;"></div>
                 <div class="mp-cell mp-s" style="left:168px; top:56px; animation-delay:.6s;"></div>
                 <div class="mp-cell mp-s" style="left:140px; top:70px; animation-delay:.5s;"></div>
                 <div class="mp-cell mp-s" style="left:154px; top:70px; animation-delay:.2s;"></div>
                 <div class="mp-cell mp-s" style="left:154px; top:84px; animation-delay:.75s;"></div>
-                <!-- courbe de croissance en direct -->
                 <svg class="mp-curve" viewBox="0 0 96 46" xmlns="http://www.w3.org/2000/svg">
                     <path class="axis" d="M4,4 L4,42 L92,42"/>
                     <path class="line" d="M4,40 C 34,40 40,14 92,10"/>
@@ -503,10 +372,7 @@
             <div class="card-body">
                 <div class="card-title" data-i18n="title_paint">Microbio Paint</div>
                 <div class="card-version" data-i18n="v_paint">SANDBOX PRÉDICTIF · V1.0</div>
-                <div class="card-desc" data-i18n="d_paint">
-                    Peins Listeria et Salmonella sur une matrice alimentaire, règle température,
-                    pH et aw, puis simule croissance et traitement thermique. Courbe en direct.
-                </div>
+                <div class="card-desc" data-i18n="d_paint">Peins Listeria et Salmonella sur une matrice alimentaire, règle température, pH et aw, puis simule croissance et traitement thermique. Courbe en direct.</div>
                 <div class="play-btn" data-i18n="play_paint">▶ SIMULER</div>
             </div>
         </a>
@@ -518,11 +384,10 @@
             <div class="screen ec-screen">
                 <div class="plat-badge" data-i18n-title="plat_both" title=""><svg class="ico-desk" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true"><path d="M0 2h16v10H0z" fill="#5fd0d8"/><path d="M2 4h12v6H2z" fill="#0d3038"/><path d="M3 5h6v1H3z" fill="#9ff0f6"/><path d="M3 7h8v1H3z" fill="#9ff0f6"/><path d="M3 8h4v1H3z" fill="#FFDD00"/><path d="M6 12h4v2H6z" fill="#3fb3bb"/><path d="M3 14h10v2H3z" fill="#5fd0d8"/></svg><svg class="ico-phone" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true"><path d="M3 0h10v16H3z" fill="#FFDD00"/><path d="M4 2h8v11H4z" fill="#243448"/><path d="M5 4h6v1H5z" fill="#fff3a8"/><path d="M5 6h6v1H5z" fill="#fff3a8"/><path d="M5 8h4v1H5z" fill="#00AAB6"/><path d="M6 14h4v1H6z" fill="#c9a800"/></svg></div>
                 <div class="ec-baseline"></div>
-                <!-- tailles croissantes : virus → … → grain de sel -->
-                <div class="ec-orb"      style="left:34px;  width:8px;  height:8px;  animation-delay:0s;"></div>
-                <div class="ec-orb"      style="left:64px;  width:14px; height:14px; animation-delay:.35s;"></div>
-                <div class="ec-orb"      style="left:100px; width:22px; height:22px; animation-delay:.7s;"></div>
-                <div class="ec-orb"      style="left:146px; width:32px; height:32px; animation-delay:1.05s;"></div>
+                <div class="ec-orb" style="left:34px;  width:8px;  height:8px;  animation-delay:0s;"></div>
+                <div class="ec-orb" style="left:64px;  width:14px; height:14px; animation-delay:.35s;"></div>
+                <div class="ec-orb" style="left:100px; width:22px; height:22px; animation-delay:.7s;"></div>
+                <div class="ec-orb" style="left:146px; width:32px; height:32px; animation-delay:1.05s;"></div>
                 <div class="ec-orb salt" style="left:200px; width:46px; height:46px; animation-delay:1.4s;"></div>
                 <div class="ec-scan"></div>
                 <div class="ec-label">100 nm <span class="hi">→ 0,5 mm</span></div>
@@ -530,10 +395,7 @@
             <div class="card-body">
                 <div class="card-title" data-i18n="title_echelle">Échelle du Monde Microbien</div>
                 <div class="card-version" data-i18n="v_echelle">OUTIL PÉDAGOGIQUE · V1.0</div>
-                <div class="card-desc" data-i18n="d_echelle">
-                    Du virus de la grippe au grain de sel : explore les micro-organismes à leur
-                    taille réelle, avec échelle et champ de vision. Données sourcées.
-                </div>
+                <div class="card-desc" data-i18n="d_echelle">Du virus de la grippe au grain de sel : explore les micro-organismes à leur taille réelle, avec échelle et champ de vision. Données sourcées.</div>
                 <div class="play-btn" data-i18n="play_echelle">▶ EXPLORER</div>
             </div>
         </a>
@@ -544,22 +406,15 @@
         <a class="game-card streak" href="./rate-my-streak.html">
             <div class="screen rs-screen">
                 <div class="plat-badge" data-i18n-title="plat_mobile" title=""><svg class="ico-phone" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true"><path d="M3 0h10v16H3z" fill="#FFDD00"/><path d="M4 2h8v11H4z" fill="#243448"/><path d="M5 4h6v1H5z" fill="#fff3a8"/><path d="M5 6h6v1H5z" fill="#fff3a8"/><path d="M5 8h4v1H5z" fill="#00AAB6"/><path d="M6 14h4v1H6z" fill="#c9a800"/></svg></div>
-                <svg class="rs-svg" viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg"
-                     preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <svg class="rs-svg" viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
                     <circle class="rs-rim2" cx="130" cy="75" r="66"/>
                     <circle class="rs-rim"  cx="130" cy="75" r="63"/>
                     <circle class="rs-agar" cx="130" cy="75" r="61"/>
-
-                    <!-- zone 1 : confluente -->
                     <path class="rs-lawn" d="M86,40 L118,28 L92,54 L124,42 L98,66 L128,54 L104,76 Z"/>
-
-                    <!-- le geste, zone par zone -->
                     <path class="rs-path rs-q1" d="M86,40 L118,28 L92,54 L124,42 L98,66"/>
                     <path class="rs-path rs-q2" d="M104,60 L156,38 L112,74 L166,52 L120,88"/>
                     <path class="rs-path rs-q3" d="M118,82 L180,74 L126,100 L186,92 L134,112"/>
                     <path class="rs-path rs-q4" d="M132,106 L184,118 L140,126 L176,132"/>
-
-                    <!-- colonies isolees -->
                     <circle class="rs-col" cx="141" cy="109" r="3"/>
                     <circle class="rs-col" cx="157" cy="113" r="3"/>
                     <circle class="rs-col" cx="172" cy="117" r="3"/>
@@ -576,10 +431,7 @@
             <div class="card-body">
                 <div class="card-title" data-i18n="title_streak">Rate My Streak</div>
                 <div class="card-version" data-i18n="v_streak">GESTE TECHNIQUE &middot; V1.0</div>
-                <div class="card-desc" data-i18n="d_streak">
-                    Trace ton isolement au doigt sur la gelose, puis regarde les colonies pousser
-                    en accelere. L'anse part a 10&#8313; UFC et s'epuise a chaque millimetre.
-                </div>
+                <div class="card-desc" data-i18n="d_streak">Trace ton isolement au doigt sur la gelose, puis regarde les colonies pousser en accelere. L'anse part a 10&#8313; UFC et s'epuise a chaque millimetre.</div>
                 <div class="play-btn" data-i18n="play_streak">&#9654; ISOLER</div>
             </div>
         </a>
@@ -590,7 +442,6 @@
         <a class="game-card perfect" href="./perfect-gram.html">
             <div class="screen pg-screen">
                 <div class="plat-badge" data-i18n-title="plat_mobile" title=""><svg class="ico-phone" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true"><path d="M3 0h10v16H3z" fill="#FFDD00"/><path d="M4 2h8v11H4z" fill="#243448"/><path d="M5 4h6v1H5z" fill="#fff3a8"/><path d="M5 6h6v1H5z" fill="#fff3a8"/><path d="M5 8h4v1H5z" fill="#00AAB6"/><path d="M6 14h4v1H6z" fill="#c9a800"/></svg></div>
-                <!-- Bactéries Gram+ et Gram- stylisées -->
                 <div class="pg-bac gram-pos" style="left:60px; top:40px; animation-delay: 0s;"></div>
                 <div class="pg-bac gram-pos" style="left:75px; top:55px; animation-delay: 0.5s;"></div>
                 <div class="pg-bac gram-neg" style="left:140px; top:70px; animation-delay: 1s;"></div>
@@ -599,10 +450,33 @@
             <div class="card-body">
                 <div class="card-title" data-i18n="title_gram">Perfect Gram</div>
                 <div class="card-version" data-i18n="v_gram">COLORATION · V1.0</div>
-                <div class="card-desc" data-i18n="d_gram">
-                    Maîtrise la coloration de Gram au doigt. Violet, lugol, alcool, fuchsine... Contrôle l'étape critique de décoloration pour réussir ton frottis !
-                </div>
+                <div class="card-desc" data-i18n="d_gram">Maîtrise la coloration de Gram au doigt. Violet, lugol, alcool, fuchsine... Contrôle l'étape critique de décoloration pour réussir ton frottis !</div>
                 <div class="play-btn" data-i18n="play_gram">▶ COLORER</div>
+            </div>
+        </a>
+
+        <!-- ============================================================= -->
+        <!-- JEU 7 — WET MOUNT                                              -->
+        <!-- ============================================================= -->
+        <a class="game-card wetmount" href="./wet-mount.html">
+            <div class="screen wm-screen">
+                <div class="plat-badge" data-i18n-title="plat_both" title=""><svg class="ico-desk" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true"><path d="M0 2h16v10H0z" fill="#5fd0d8"/><path d="M2 4h12v6H2z" fill="#0d3038"/><path d="M3 5h6v1H3z" fill="#9ff0f6"/><path d="M3 7h8v1H3z" fill="#9ff0f6"/><path d="M3 8h4v1H3z" fill="#FFDD00"/><path d="M6 12h4v2H6z" fill="#3fb3bb"/><path d="M3 14h10v2H3z" fill="#5fd0d8"/></svg><svg class="ico-phone" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true"><path d="M3 0h10v16H3z" fill="#FFDD00"/><path d="M4 2h8v11H4z" fill="#243448"/><path d="M5 4h6v1H5z" fill="#fff3a8"/><path d="M5 6h6v1H5z" fill="#fff3a8"/><path d="M5 8h4v1H5z" fill="#00AAB6"/><path d="M6 14h4v1H6z" fill="#c9a800"/></svg></div>
+                
+                <div class="wm-field">
+                    <!-- Bactéries floues et nettes simulant la profondeur de champ -->
+                    <div class="wm-bac b1"></div>
+                    <div class="wm-bac b2"></div>
+                    <div class="wm-bac b3"></div>
+                    <!-- Réticule -->
+                    <div class="wm-crosshair"></div>
+                </div>
+
+            </div>
+            <div class="card-body">
+                <div class="card-title" data-i18n="title_wetmount">Wet Mount</div>
+                <div class="card-version" data-i18n="v_wetmount">OBSERVATION · V1.0</div>
+                <div class="card-desc" data-i18n="d_wetmount">Monte ton état frais. Déplace-toi sur la lame, gère la mise au point et le grossissement pour identifier la flore du lait cru, d'un écouvillon ou d'eau stagnante.</div>
+                <div class="play-btn" data-i18n="play_wetmount">▶ OBSERVER</div>
             </div>
         </a>
 
@@ -634,17 +508,20 @@ const I18N = {
     title_biofilm: "Biofilm Simulator", title_fighter: "Microbes Fighter",
     title_paint: "Microbio Paint", title_echelle: "Échelle du Monde Microbien",
     title_streak: "Rate My Streak", title_gram: "Perfect Gram",
+    title_wetmount: "Wet Mount",
     v_biofilm: "ARCADE · V5.0", v_fighter: "VERSUS · V1.0",
     v_paint: "SANDBOX PRÉDICTIF · V1.0", v_echelle: "OUTIL PÉDAGOGIQUE · V1.0",
     v_streak: "GESTE TECHNIQUE · V1.0", v_gram: "COLORATION · V1.0",
+    v_wetmount: "OBSERVATION · V1.0",
     d_biofilm: "Colonise la canalisation : biofilm multi-espèces, matrice, quorum sensing, sporulation sous stress et survie aux nettoyages NEP. Clavier ou tactile.",
     d_fighter: "Duel en 2 manches : la bactérie « vicieuse » attaque à distance, le microbiologiste riposte avec les barrières (pH, aw, thermique). 1-2 joueurs ou CPU.",
     d_paint: "Peins Listeria et Salmonella sur une matrice alimentaire, règle température, pH et aw, puis simule croissance et traitement thermique. Courbe en direct.",
     d_echelle: "Du virus de la grippe au grain de sel : explore les micro-organismes à leur taille réelle, avec échelle et champ de vision. Données sourcées.",
     d_streak: "Trace ton isolement au doigt sur la gélose, puis regarde les colonies pousser en accéléré. L'anse part à 10⁹ UFC et s'épuise à chaque millimètre parcouru ; recroiser une strie en reprend la moitié.",
     d_gram: "Maîtrise la coloration de Gram au doigt. Violet, lugol, alcool, fuchsine... Contrôle l'étape critique de décoloration pour réussir ton frottis !",
+    d_wetmount: "Monte ton état frais. Déplace-toi sur la lame, gère la mise au point et le grossissement pour identifier la flore du lait cru, d'un écouvillon ou d'eau stagnante.",
     play_biofilm: "▶ JOUER", play_fighter: "▶ COMBAT", play_paint: "▶ SIMULER", play_echelle: "▶ EXPLORER",
-    play_streak: "▶ ISOLER", play_gram: "▶ COLORER",
+    play_streak: "▶ ISOLER", play_gram: "▶ COLORER", play_wetmount: "▶ OBSERVER",
     plat_desktop: "Conseillé sur ordinateur", plat_mobile: "Conseillé sur smartphone",
     plat_both: "Ordinateur ou smartphone",
     leg_desktop: "ordinateur conseillé", leg_mobile: "smartphone conseillé", leg_both: "les deux",
@@ -657,17 +534,20 @@ const I18N = {
     title_biofilm: "Biofilm Simulator", title_fighter: "Microbes Fighter",
     title_paint: "Microbio Paint", title_echelle: "Scale of the Microbial World",
     title_streak: "Rate My Streak", title_gram: "Perfect Gram",
+    title_wetmount: "Wet Mount",
     v_biofilm: "ARCADE · V5.0", v_fighter: "VERSUS · V1.0",
     v_paint: "PREDICTIVE SANDBOX · V1.0", v_echelle: "EDUCATIONAL TOOL · V1.0",
     v_streak: "TECHNIQUE DRILL · V1.0", v_gram: "STAINING · V1.0",
+    v_wetmount: "OBSERVATION · V1.0",
     d_biofilm: "Colonise the pipe: multi-species biofilm, matrix, quorum sensing, stress-induced sporulation and survival through CIP cleanings. Keyboard or touch.",
     d_fighter: "Best-of-three duel: the “vicious” bacterium attacks at range, the microbiologist strikes back with barriers (pH, aw, heat). 1-2 players or CPU.",
     d_paint: "Paint Listeria and Salmonella on a food matrix, set temperature, pH and aw, then simulate growth and heat treatment. Live growth curve.",
     d_echelle: "From the flu virus to a grain of salt: explore micro-organisms at their real size, with scale bar and field of view. Sourced data.",
     d_streak: "Draw your streak on the agar with a finger, then watch the colonies grow in fast-forward. The loop starts at 10⁹ CFU and empties with every millimetre travelled; re-crossing a streak takes half of what is there.",
     d_gram: "Master the Gram stain with your finger. Crystal violet, iodine, alcohol, safranin... Don't mess up the critical decolorization step!",
+    d_wetmount: "Mount your wet prep. Roam the slide, manage focus and magnification to identify the flora of raw milk, a swab, or stagnant water.",
     play_biofilm: "▶ PLAY", play_fighter: "▶ FIGHT", play_paint: "▶ SIMULATE", play_echelle: "▶ EXPLORE",
-    play_streak: "▶ ISOLATE", play_gram: "▶ STAIN",
+    play_streak: "▶ ISOLATE", play_gram: "▶ STAIN", play_wetmount: "▶ OBSERVE",
     plat_desktop: "Best on desktop", plat_mobile: "Best on a phone",
     plat_both: "Desktop or phone",
     leg_desktop: "desktop recommended", leg_mobile: "phone recommended", leg_both: "either one",

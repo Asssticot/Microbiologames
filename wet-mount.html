@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="color-scheme" content="dark only">
+<meta name="supported-color-schemes" content="dark">
+<title>WET MOUNT — observation à l'état frais</title>
+<style>
+:root{
+  --void:#07090d; --panel:#121a24; --panel2:#0d141c; --line:#26323f;
+  --teal:#00AAB6; --teal-l:#5fd0d8; --yellow:#FFDD00;
+  --ink:#cfe3e6; --dim:#6d8592; --bad:#ff5a63; --good:#63d68a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--void);color:var(--ink);
+  font-family:"Courier New",ui-monospace,monospace;
+  display:flex;align-items:center;justify-content:center;padding:8px;
+  overflow:hidden;-webkit-user-select:none;user-select:none;
+  -webkit-tap-highlight-color:transparent}
+#app{width:100%;max-width:430px;display:flex;flex-direction:column;gap:6px}
+
+.bar{display:flex;align-items:center;gap:6px;background:var(--panel);
+  border:2px solid var(--line);padding:5px 6px}
+.title{font-weight:bold;letter-spacing:2px;font-size:12px;color:var(--yellow);flex:none}
+.spacer{flex:1}
+.btn{background:var(--panel);color:var(--ink);border:2px solid var(--line);
+  font-family:inherit;font-size:11px;font-weight:bold;letter-spacing:1px;
+  padding:7px 9px;cursor:pointer;text-transform:uppercase;white-space:nowrap}
+.btn:hover{border-color:var(--teal);color:#fff}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--teal);color:#04222a;border-color:#7fe6ee}
+.btn.ghost{border-color:#3a4a5a;color:var(--dim)}
+.btn:focus-visible,.chip:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+a.btn{text-decoration:none;display:inline-block;flex:none}
+#idxBtn:hover{border-color:var(--yellow);color:var(--yellow)}
+
+#stage{position:relative;background:#04060a;border:2px solid var(--line);overflow:hidden}
+canvas{display:block;width:100%;height:auto;touch-action:none;
+  image-rendering:pixelated;image-rendering:crisp-edges}
+
+.hud{display:flex;gap:6px}
+.objs{display:flex;border:2px solid var(--line);flex:1}
+.objs button{flex:1;background:var(--panel);color:var(--dim);border:none;
+  border-right:2px solid var(--line);font-family:inherit;font-size:11px;
+  font-weight:bold;letter-spacing:1px;padding:8px 2px;cursor:pointer}
+.objs button:last-child{border-right:none}
+.objs button.on{background:var(--teal);color:#04222a}
+.count{background:var(--panel);border:2px solid var(--line);padding:4px 8px;
+  display:flex;flex-direction:column;justify-content:center;min-width:64px}
+.count .l{font-size:8px;color:var(--dim);letter-spacing:1px}
+.count .v{font-size:14px;font-weight:bold;color:var(--yellow);line-height:1.1}
+
+.overlay{position:absolute;inset:0;background:rgba(4,6,10,.965);
+  display:flex;flex-direction:column;padding:12px;gap:8px;overflow-y:auto;
+  -webkit-overflow-scrolling:touch}
+.overlay.hidden{display:none}
+.ov-title{font-size:14px;font-weight:bold;letter-spacing:2px;color:var(--yellow)}
+.ov-sub{font-size:10px;color:var(--dim);line-height:1.55}
+.chip{background:var(--panel);border:2px solid var(--line);padding:8px;cursor:pointer;
+  text-align:left;font-family:inherit;color:var(--ink);width:100%}
+.chip:hover{border-color:var(--teal)}
+.chip .n{font-size:11px;font-weight:bold;letter-spacing:1px}
+.chip .d{font-size:9px;color:var(--dim);margin-top:3px;line-height:1.45}
+
+.list{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.item{background:var(--panel2);border:1px solid var(--line);padding:4px 3px;
+  display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.item.found{border-color:#2f5c66}
+.item canvas{width:100%;height:auto;image-rendering:pixelated}
+.item .nm{font-size:7.5px;line-height:1.25;text-align:center;color:var(--ink);
+  min-height:19px;display:flex;align-items:center}
+.item.miss .nm{color:#41505c;letter-spacing:2px}
+.det{border-left:3px solid var(--teal);background:#10171f;padding:7px 9px}
+.det h4{font-size:10.5px;color:var(--teal-l);letter-spacing:1px;margin-bottom:3px}
+.det .sz{font-size:9px;color:var(--yellow);margin-bottom:4px}
+.det p{font-size:9.5px;line-height:1.6}
+
+.toast{position:absolute;left:50%;top:8px;transform:translateX(-50%);
+  background:rgba(18,26,36,.94);border:1px solid var(--line);color:var(--ink);
+  font-size:9.5px;font-weight:bold;letter-spacing:1px;padding:4px 8px;
+  pointer-events:none;opacity:0;transition:opacity .18s;white-space:nowrap;z-index:5}
+.toast.show{opacity:1}
+.toast.good{background:rgba(20,58,38,.95);border-color:#63d68a;color:#a8f0c4}
+.foot{display:flex;gap:6px;margin-top:auto;padding-top:6px}
+.foot .btn{flex:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="bar">
+    <a class="btn ghost" id="idxBtn" href="./index.html" data-i18n="btn_index">&#9664; INDEX</a>
+    <span class="title">WET MOUNT</span>
+    <span class="spacer"></span>
+    <button class="btn ghost" id="listBtn" data-i18n="btn_list">LISTE</button>
+    <button class="btn ghost" id="langBtn">EN</button>
+  </div>
+
+  <div id="stage">
+    <canvas id="cv" width="200" height="276"></canvas>
+    <div class="toast" id="toast"></div>
+
+    <!-- choix de l'échantillon -->
+    <div class="overlay" id="ovMenu">
+      <div class="ov-title" data-i18n="menu_title">MONTE TON ÉTAT FRAIS</div>
+      <div class="ov-sub" data-i18n="menu_sub">Une goutte entre lame et lamelle, sans coloration. Balade-toi avec les vis, change d'objectif, et identifie ce que tu croises. Certains habitants sont très rares.</div>
+      <div id="sampleGrid" style="display:flex;flex-direction:column;gap:6px"></div>
+      <div class="ov-sub" style="margin-top:auto" data-i18n="menu_tip">Les quatre molettes du bas : chariot horizontal, chariot vertical, vis macrométrique, vis micrométrique.</div>
+    </div>
+
+    <!-- liste des trouvailles -->
+    <div class="overlay hidden" id="ovList">
+      <div class="ov-title" id="lsTitle">—</div>
+      <div class="ov-sub" id="lsSub"></div>
+      <div class="list" id="lsGrid"></div>
+      <div id="lsDet"></div>
+      <div class="foot">
+        <button class="btn ghost" id="lsMenu" data-i18n="btn_samples">Échantillons</button>
+        <button class="btn primary" id="lsClose" data-i18n="btn_back">Retour</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="hud">
+    <div class="objs">
+      <button data-obj="0" class="on">×10</button>
+      <button data-obj="1">×40</button>
+      <button data-obj="2">×1000</button>
+    </div>
+    <div class="count">
+      <span class="l" data-i18n="hud_found">Trouvés</span>
+      <span class="v" id="foundVal">0/0</span>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ==========================================================================
+   WET MOUNT — observation microscopique à l'état frais
+   Tout est à l'échelle : les tailles sont les tailles réelles en micromètres,
+   les champs de vision ceux d'un oculaire de nombre de champ 20.
+   Seule la prévalence est arrangée, pour que la partie reste jouable.
+   ========================================================================== */
+
+/* ---------------- i18n ---------------- */
+const I18N={
+fr:{
+ btn_index:"◀ INDEX", btn_list:"LISTE", btn_back:"Retour", btn_samples:"Échantillons",
+ menu_title:"MONTE TON ÉTAT FRAIS",
+ menu_sub:"Une goutte entre lame et lamelle, sans coloration. Balade-toi avec les vis, change d'objectif, et identifie ce que tu croises. Certains habitants sont très rares.",
+ menu_tip:"Les quatre molettes du bas : chariot horizontal, chariot vertical, vis macrométrique, vis micrométrique.",
+ hud_found:"Trouvés",
+ k_x:"CHARIOT X", k_y:"CHARIOT Y", k_macro:"MACRO", k_micro:"MICRO",
+ t_blur:"Trop flou — reprends le point",
+ t_mag:"Grossissement insuffisant",
+ t_new:"IDENTIFIÉ",
+ t_already:"Déjà dans la liste",
+ t_none:"Rien d'identifiable ici",
+ t_done:"Échantillon complet",
+ ls_sub:"Ce que tu n'as pas encore croisé reste une silhouette. Touche une trouvaille pour la relire.",
+ lbl_size:"Taille réelle", lbl_obj:"Objectif minimal", lbl_depth:"PROFONDEUR",
+ unknown:"???",
+ s_milk:"Lait cru", s_milk_d:"Trente-six heures en tank réfrigéré. Flore lactique dominante, quelques indésirables, et des globules gras partout.",
+ s_swab:"Prélèvement de surface", s_swab_d:"Écouvillon passé sur un convoyeur après nettoyage. Peu de monde, mais ce qui reste compte.",
+ s_water:"Eau stagnante", s_water_d:"Eau d'un point bas mal drainé. Tout un écosystème : algues, protozoaires, et le reste.",
+ done_msg:"Tu as identifié tout ce que contenait cet échantillon."
+},
+en:{
+ btn_index:"◀ INDEX", btn_list:"LIST", btn_back:"Back", btn_samples:"Samples",
+ menu_title:"MOUNT YOUR WET PREP",
+ menu_sub:"A drop between slide and coverslip, no staining. Roam with the knobs, switch objectives, and identify what you meet. Some inhabitants are very rare.",
+ menu_tip:"The four knobs below: X stage, Y stage, coarse focus, fine focus.",
+ hud_found:"Found",
+ k_x:"STAGE X", k_y:"STAGE Y", k_macro:"COARSE", k_micro:"FINE",
+ t_blur:"Too blurred — refocus",
+ t_mag:"Magnification too low",
+ t_new:"IDENTIFIED",
+ t_already:"Already on the list",
+ t_none:"Nothing identifiable here",
+ t_done:"Sample complete",
+ ls_sub:"What you have not met yet stays a silhouette. Tap a find to read it again.",
+ lbl_size:"Real size", lbl_obj:"Minimum objective", lbl_depth:"DEPTH",
+ unknown:"???",
+ s_milk:"Raw milk", s_milk_d:"Thirty-six hours in a chilled tank. Lactic flora dominates, a few undesirables, and fat globules everywhere.",
+ s_swab:"Surface swab", s_swab_d:"A swab run over a conveyor after cleaning. Not many residents, but the ones left matter.",
+ s_water:"Stagnant water", s_water_d:"Water from a badly drained low point. A whole ecosystem: algae, protozoa, and the rest.",
+ done_msg:"You have identified everything this sample held."
+}};
+let LANG="fr";
+try{const st=localStorage.getItem("mbg_lang");
+  if(st==="fr"||st==="en")LANG=st;
+  else if((navigator.language||"fr").slice(0,2)==="en")LANG="en";}catch(e){}
+const T=k=>(I18N[LANG][k]!==undefined?I18N[LANG][k]:k);
+
+/* ---------------- optique ----------------
+   Oculaire de nombre de champ 20 : diamètre du champ = 20 mm / grossissement
+   de l'objectif. La profondeur de champ chute avec le carré de l'ouverture,
+   d'où une mise au point de plus en plus pointue.                          */
+const OBJS=[
+ {lbl:"×10",   mag:10,   fov:1600, dof:34,  name:"x10"},
+ {lbl:"×40",   mag:40,   fov:400,  dof:3.5, name:"x40"},
+ {lbl:"×1000", mag:1000, fov:160,  dof:1.5, name:"x1000"}
+];
+const WORLD=2800;                    // côté de la préparation explorable, en µm
+/* Une goutte écrasée sous une lamelle fait une quinzaine de micromètres.
+   À l'immersion, la profondeur de champ n'en couvre qu'un cinquième : c'est
+   la vis micrométrique qui donne accès aux différents étages de la goutte.  */
+const ZMIN=-7, ZMAX=7;
+
+/* ---------------- couleurs d'état frais ----------------
+   Pas de colorant : contraste de phase pauvre, tout est gris translucide.
+   Seuls les pigments naturels sortent — chlorophylle, caroténoïdes. */
+const C={
+ bg:"#e6e3d7", bg2:"#dcd8ca", bgv:"#c6c1b0",
+ bact:"#b6b3a6", bactR:"#87837a",
+ spore:"#f6f4ea", sporeR:"#6f6a5e",
+ yeast:"#d9d4c2", yeastR:"#95907f",
+ hyph:"#cec8b6", hyphR:"#8d8677",
+ conid:"#7c9668", conidR:"#4c6642",
+ olive:"#6d6c46", oliveR:"#454527",
+ green:"#4f9150", greenR:"#2d6431",
+ grn2:"#68ab5f", diat:"#b58c46", diatR:"#7c5c26",
+ prot:"#c9c3b1", protR:"#8e8878", org:"#9a8464",
+ deb:"#a89066", debR:"#6d5a3f",
+ fat:"#f5f2e4", fatR:"#a9a394",
+ nucl:"#8d8296", cyan:"#7fb8c4"
+};
+
+/* ---------------- espèces ----------------
+   n : nombre d'individus dans la préparation. La prévalence est arrangée,
+   pas les tailles.                                                        */
+const SAMPLES={
+milk:{ key:"s_milk", sp:[
+ {id:"fat", kind:"globule", L:5, W:5, vr:.7, n:0, proc:true, dens:62, jit:1.0, mag:40, mot:"brown",
+  nm:{fr:"Globule gras",en:"Fat globule"}, sz:"1–8 µm",
+  info:{fr:"Ce n'est pas un micro-organisme, mais c'est ce qui remplit le champ d'un lait cru. Sphères très réfringentes, à bord noir marqué, de taille très inégale.",
+        en:"Not a micro-organism, but it is what fills the field of a raw milk. Highly refractile spheres with a strong dark rim and very uneven sizes."}},
+ {id:"lc", kind:"chain", L:1.0, W:1.0, seg:5, n:0, proc:true, dens:120, jit:1.0, mag:1000, mot:"brown",
+  nm:{fr:"Lactocoques en chaînette",en:"Lactococci in chains"}, sz:"0,8–1,2 µm",
+  info:{fr:"Lactococcus lactis, le cheval de trait de la fermentation lactique. Cocci ovoïdes accolés par deux ou en courtes chaînettes, immobiles.",
+        en:"Lactococcus lactis, the workhorse of lactic fermentation. Ovoid cocci in pairs or short chains, non-motile."}},
+ {id:"lb", kind:"rod", L:5, W:0.9, n:0, proc:true, dens:90, jit:1.1, mag:1000, mot:"brown",
+  nm:{fr:"Lactobacilles",en:"Lactobacilli"}, sz:"2–8 × 0,9 µm",
+  info:{fr:"Bacilles longs et fins, souvent en palissade. Ils acidifient lentement mais sûrement, et dominent en fin de conservation.",
+        en:"Long slender rods, often in palisades. They acidify slowly but surely and dominate late in storage."}},
+ {id:"ps", kind:"rod", L:3, W:0.8, n:0, proc:true, dens:12, jit:30, mag:1000, mot:"swim", spd:32,
+  nm:{fr:"Pseudomonas",en:"Pseudomonas"}, sz:"1,5–4 × 0,8 µm",
+  info:{fr:"Bacille psychrotrophe très mobile, à flagelle polaire. C'est lui qui altère le lait réfrigéré : protéases et lipases thermorésistantes.",
+        en:"A highly motile psychrotrophic rod with a polar flagellum. It spoils chilled milk with heat-resistant proteases and lipases."}},
+ {id:"som", kind:"leuco", L:12, W:12, n:187, mag:40, mot:"brown",
+  nm:{fr:"Cellule somatique",en:"Somatic cell"}, sz:"10–15 µm",
+  info:{fr:"Leucocyte de la mamelle. Sa concentration est l'indicateur de mammite : au-delà de 400 000 par millilitre, le lait est refusé.",
+        en:"A leucocyte from the udder. Its concentration is the mastitis indicator: above 400,000 per millilitre the milk is rejected."}},
+ {id:"kl", kind:"bud", L:7, W:5.5, n:156, mag:40, mot:"brown",
+  nm:{fr:"Levure lactique",en:"Dairy yeast"}, sz:"4–8 µm",
+  info:{fr:"Kluyveromyces marxianus, capable de fermenter le lactose, ce que peu de levures savent faire. Bourgeonnement bien visible.",
+        en:"Kluyveromyces marxianus, able to ferment lactose, which few yeasts can. Budding is clearly visible."}},
+ {id:"sa", kind:"cluster", L:1.0, W:1.0, seg:7, n:702, mag:1000, mot:"brown",
+  nm:{fr:"Staphylocoques en amas",en:"Staphylococci in clusters"}, sz:"0,8–1 µm",
+  info:{fr:"Amas irréguliers en grappe de raisin. Staphylococcus aureus produit une entérotoxine thermostable qui survit à la pasteurisation.",
+        en:"Irregular grape-like clusters. Staphylococcus aureus makes a heat-stable enterotoxin that survives pasteurisation."}},
+ {id:"ec", kind:"rod", L:3, W:1.0, n:585, mag:1000, mot:"swim", spd:24,
+  nm:{fr:"Entérobactérie mobile",en:"Motile enterobacterium"}, sz:"2–4 × 1 µm",
+  info:{fr:"Bacille mobile à ciliature péritriche : il avance en ligne droite puis culbute et repart au hasard. Indicateur de contamination fécale.",
+        en:"A motile rod with peritrichous flagella: it runs straight, tumbles, then sets off at random. An indicator of faecal contamination."}},
+ {id:"spo", kind:"spore", L:1.7, W:1.1, n:254, mag:1000, mot:"brown",
+  nm:{fr:"Spore bactérienne",en:"Bacterial spore"}, sz:"1–2 µm",
+  info:{fr:"Endospore libre, très réfringente à l'état frais : elle brille en clair avec un liseré noir. Elle traverse la pasteurisation sans dommage.",
+        en:"A free endospore, strongly refractile in a wet mount: bright with a black rim. It passes through pasteurisation unharmed."}},
+ {id:"geo", kind:"arthro", L:9, W:5, seg:6, n:28, mag:40, mot:"none",
+  nm:{fr:"Geotrichum candidum",en:"Geotrichum candidum"}, sz:"6–12 × 4–6 µm",
+  info:{fr:"À mi-chemin entre levure et moisissure. Son mycélium se fragmente en arthrospores rectangulaires alignées bout à bout. Flore de surface des fromages.",
+        en:"Halfway between yeast and mould. Its mycelium fragments into rectangular arthrospores lined up end to end. A cheese-rind organism."}},
+ {id:"hy", kind:"hypha", L:230, W:6, n:9, mag:10, mot:"none",
+  nm:{fr:"Hyphe mycélien",en:"Fungal hypha"}, sz:"5–8 µm de large",
+  info:{fr:"Filament cloisonné à croissance apicale. Un seul fragment suffit à recoloniser toute une préparation.",
+        en:"A septate filament growing at its tip. A single fragment is enough to recolonise a whole preparation."}},
+ {id:"muc", kind:"mucor", L:90, W:14, n:2, mag:10, mot:"none",
+  nm:{fr:"Sporocystophore de Mucor",en:"Mucor sporangiophore"}, sz:"60–120 µm",
+  info:{fr:"Grande sphère sombre bourrée de spores, portée par un pied non cloisonné. À maturité la paroi éclate et libère des milliers de spores d'un coup.",
+        en:"A large dark sphere packed with spores on a non-septate stalk. At maturity the wall bursts and releases thousands of spores at once."}}
+]},
+
+swab:{ key:"s_swab", sp:[
+ {id:"deb", kind:"debris", L:14, W:10, vr:1.1, n:374, mag:40, mot:"brown",
+  nm:{fr:"Résidu organique",en:"Organic residue"}, sz:"5–40 µm",
+  info:{fr:"Restes de matière alimentaire non éliminés au nettoyage. Ce sont eux qui nourrissent le biofilm et protègent les cellules du désinfectant.",
+        en:"Food matter left behind by cleaning. It feeds the biofilm and shields cells from disinfectant."}},
+ {id:"mic", kind:"cluster", L:1.2, W:1.2, seg:5, n:0, proc:true, dens:120, jit:1.0, mag:1000, mot:"brown",
+  nm:{fr:"Micrococcus",en:"Micrococcus"}, sz:"1–1,5 µm",
+  info:{fr:"Cocci en tétrades ou petits amas, très résistants à la dessiccation. Ce sont les survivants ordinaires des surfaces sèches.",
+        en:"Cocci in tetrads or small clusters, very resistant to drying. The ordinary survivors of dry surfaces."}},
+ {id:"psb", kind:"rod", L:3, W:0.8, n:0, proc:true, dens:90, jit:30, mag:1000, mot:"swim", spd:30,
+  nm:{fr:"Pseudomonas",en:"Pseudomonas"}, sz:"1,5–4 × 0,8 µm",
+  info:{fr:"Premier colonisateur des surfaces humides. Il pose la matrice dans laquelle les autres viendront s'installer.",
+        en:"The first coloniser of wet surfaces. It lays down the matrix the others will settle into."}},
+ {id:"fib", kind:"fibre", L:520, W:14, n:5, mag:10, mot:"none",
+  nm:{fr:"Fibre textile",en:"Textile fibre"}, sz:"200–800 µm",
+  info:{fr:"Contaminant classique de l'écouvillon lui-même, ou d'un vêtement. Long ruban torsadé à bords parallèles : rien de vivant là-dedans.",
+        en:"A classic contaminant from the swab itself, or from clothing. A long twisted ribbon with parallel edges: nothing alive in there."}},
+ {id:"spb", kind:"spore", L:1.9, W:1.1, n:975, mag:1000, mot:"brown",
+  nm:{fr:"Spore de Bacillus",en:"Bacillus spore"}, sz:"1–2 µm",
+  info:{fr:"La forme qui résiste au nettoyage en place. Elle attend la remise en production pour germer dans un point mort de l'installation.",
+        en:"The form that survives cleaning in place. It waits for production to restart, then germinates in a dead leg of the line."}},
+ {id:"deb2", kind:"yeast", L:5, W:4, n:156, mag:40, mot:"brown",
+  nm:{fr:"Debaryomyces hansenii",en:"Debaryomyces hansenii"}, sz:"3–6 µm",
+  info:{fr:"Levure halotolérante, à l'aise dans les saumures et sur les surfaces salées. Petites cellules rondes à ovales, bourgeonnement multilatéral.",
+        en:"A halotolerant yeast, at ease in brines and on salted surfaces. Small round to oval cells with multilateral budding."}},
+ {id:"clad", kind:"chain", L:5, W:3.4, seg:4, n:112, mag:40, mot:"brown", col:"olive",
+  nm:{fr:"Conidies de Cladosporium",en:"Cladosporium conidia"}, sz:"3–7 µm",
+  info:{fr:"Chaînettes ramifiées de conidies olivâtres, à cicatrice d'insertion bien nette. La moisissure des joints et des zones froides humides.",
+        en:"Branched chains of olive conidia with a distinct attachment scar. The mould of gaskets and damp cold zones."}},
+ {id:"hyb", kind:"hypha", L:260, W:6, n:10, mag:10, mot:"none",
+  nm:{fr:"Mycélium",en:"Mycelium"}, sz:"4–8 µm de large",
+  info:{fr:"Réseau de filaments cloisonnés. Sur une surface, il s'insinue dans les rayures et les micro-fissures de l'inox.",
+        en:"A network of septate filaments. On a surface it works its way into scratches and micro-cracks in the steel."}},
+ {id:"pen", kind:"penicillium", L:44, W:4, n:44, mag:40, mot:"none",
+  nm:{fr:"Pinceau de Penicillium",en:"Penicillium brush"}, sz:"30–60 µm",
+  info:{fr:"Le conidiophore se ramifie en un pinceau de phialides, chacune émettant une chaînette de conidies. C'est cette architecture qui donne son nom au genre.",
+        en:"The conidiophore branches into a brush of phialides, each shedding a chain of conidia. That architecture gives the genus its name."}},
+ {id:"asp", kind:"aspergillus", L:60, W:6, n:22, mag:40, mot:"none",
+  nm:{fr:"Tête aspergillaire",en:"Aspergillus head"}, sz:"40–90 µm",
+  info:{fr:"Une vésicule renflée en haut d'un pied lisse, hérissée de phialides rayonnantes sur toute sa surface : une tête d'épingle couverte de spores.",
+        en:"A swollen vesicle atop a smooth stalk, bristling with phialides radiating over its whole surface: a pinhead covered in spores."}},
+ {id:"bio", kind:"biofilm", L:60, W:44, n:25, mag:40, mot:"none",
+  nm:{fr:"Fragment de biofilm",en:"Biofilm fragment"}, sz:"30–100 µm",
+  info:{fr:"Plaque de matrice exopolysaccharidique arrachée à la surface, avec ses cellules prises dedans. C'est l'état normal des bactéries en usine.",
+        en:"A patch of exopolysaccharide matrix torn from the surface, cells embedded in it. This is the normal state of bacteria in a plant."}},
+ {id:"lis", kind:"rod", L:1.5, W:0.5, n:215, mag:1000, mot:"tumble", spd:14,
+  nm:{fr:"Petit bacille culbutant",en:"Small tumbling rod"}, sz:"0,5 × 1–2 µm",
+  info:{fr:"Listeria monocytogenes : bacille court, à peine visible même à l'immersion, animé d'une culbute caractéristique en roue. C'est ce qu'on traque sur les surfaces, et c'est le plus discret du champ.",
+        en:"Listeria monocytogenes: a short rod, barely visible even under oil, with its characteristic tumbling, cartwheeling motion. This is what surface monitoring hunts for, and it is the most discreet thing in the field."}}
+]},
+
+water:{ key:"s_water", sp:[
+ {id:"det", kind:"debris", L:22, W:15, vr:1.2, n:312, mag:40, mot:"brown",
+  nm:{fr:"Détritus",en:"Detritus"}, sz:"10–60 µm",
+  info:{fr:"Matière organique en décomposition. C'est la base de la chaîne : les bactéries la dégradent, les protozoaires broutent les bactéries.",
+        en:"Decaying organic matter. The base of the chain: bacteria break it down, protozoa graze the bacteria."}},
+ {id:"bac", kind:"rod", L:2.5, W:0.8, n:0, proc:true, dens:140, jit:32, mag:1000, mot:"swim", spd:36,
+  nm:{fr:"Bactéries mobiles",en:"Motile bacteria"}, sz:"1–4 × 0,8 µm",
+  info:{fr:"Le fond bactérien de toute eau stagnante. À l'immersion on voit nettement la nage en ligne droite, entrecoupée de culbutes.",
+        en:"The bacterial background of any stagnant water. Under oil you clearly see straight runs broken by tumbles."}},
+ {id:"chl", kind:"algae", L:4.5, W:4.5, n:0, proc:true, dens:55, jit:1.2, mag:40, mot:"brown",
+  nm:{fr:"Chlorelles",en:"Chlorella"}, sz:"2–8 µm",
+  info:{fr:"Microalgue verte sphérique, à chloroplaste unique en cupule. Elle vire au vert franc et se multiplie par division interne en quatre.",
+        en:"A spherical green microalga with a single cup-shaped chloroplast. Vivid green, it divides internally into four."}},
+ {id:"sce", kind:"scenedesmus", L:26, W:7, seg:4, n:218, mag:40, mot:"brown",
+  nm:{fr:"Scenedesmus",en:"Scenedesmus"}, sz:"20–35 µm",
+  info:{fr:"Cénobe de quatre cellules fusiformes soudées côte à côte, les deux extrêmes portant souvent de longues épines. Indicateur d'eau riche en nutriments.",
+        en:"A coenobium of four spindle cells fused side by side, the outer two often bearing long spines. An indicator of nutrient-rich water."}},
+ {id:"nav", kind:"diatom", L:48, W:12, n:137, mag:40, mot:"glide", spd:9,
+  nm:{fr:"Diatomée naviculoïde",en:"Naviculoid diatom"}, sz:"30–80 µm",
+  info:{fr:"Frustule de silice en forme de barque, orné de stries régulières. Elle glisse le long du raphé, sans aucun appendice visible.",
+        en:"A boat-shaped silica frustule with regular striae. It glides along its raphe with no visible appendage."}},
+ {id:"osc", kind:"filament", L:270, W:6, n:62, mag:40, mot:"glide", spd:5, col:"green",
+  nm:{fr:"Cyanobactérie filamenteuse",en:"Filamentous cyanobacterium"}, sz:"5–8 µm de large",
+  info:{fr:"Oscillatoria : trichome de cellules discoïdes empilées, animé d'un lent balancement. C'est une bactérie, pas une algue, malgré la chlorophylle.",
+        en:"Oscillatoria: a trichome of stacked disc cells with a slow swaying motion. It is a bacterium, not an alga, despite the chlorophyll."}},
+ {id:"eug", kind:"euglena", L:62, W:16, n:100, mag:40, mot:"swim", spd:120,
+  nm:{fr:"Euglène",en:"Euglena"}, sz:"40–90 µm",
+  info:{fr:"Fuseau vert à flagelle antérieur et tache oculaire rouge. Elle nage vite, et se déforme en vaguelettes quand elle est coincée : le métabolisme euglénoïde.",
+        en:"A green spindle with an anterior flagellum and a red eyespot. It swims fast and ripples when stuck: euglenoid movement."}},
+ {id:"vor", kind:"vorticella", L:46, W:32, n:56, mag:40, mot:"spring",
+  nm:{fr:"Vorticelle",en:"Vorticella"}, sz:"35–60 µm",
+  info:{fr:"Cilié fixé en forme de clochette, au bout d'un pédoncule contractile. Au moindre choc, le pédoncule s'enroule en tire-bouchon d'un coup sec.",
+        en:"A bell-shaped stalked ciliate on a contractile stalk. At the slightest shock the stalk springs into a corkscrew."}},
+ {id:"spi", kind:"spirogyra", L:640, W:34, n:5, mag:10, mot:"none",
+  nm:{fr:"Spirogyre",en:"Spirogyra"}, sz:"25–45 µm de large",
+  info:{fr:"Algue verte filamenteuse, reconnaissable entre toutes à ses chloroplastes en ruban enroulé en hélice le long de chaque cellule.",
+        en:"A filamentous green alga, unmistakable for its ribbon chloroplasts wound in a helix along each cell."}},
+ {id:"par", kind:"paramecium", L:190, W:62, n:6, mag:10, mot:"swim", spd:800,
+  nm:{fr:"Paramécie",en:"Paramecium"}, sz:"150–250 µm",
+  info:{fr:"Cilié en semelle de chaussure, entièrement couvert de cils. Elle file en tournant sur son axe, et fait marche arrière dès qu'elle bute sur un obstacle.",
+        en:"A slipper-shaped ciliate covered in cilia. It races along spinning on its axis and reverses the moment it hits an obstacle."}},
+ {id:"rot", kind:"rotifer", L:230, W:90, n:4, mag:10, mot:"swim", spd:260,
+  nm:{fr:"Rotifère",en:"Rotifer"}, sz:"150–400 µm",
+  info:{fr:"Animal pluricellulaire complet, avec cerveau et tube digestif, dans le volume d'un gros protozoaire. Sa couronne ciliée tourne comme une roue pour créer un courant.",
+        en:"A complete multicellular animal, brain and gut included, in the volume of a large protozoan. Its ciliated crown spins like a wheel to draw a current."}},
+ {id:"amo", kind:"amoeba", L:170, W:130, n:3, mag:10, mot:"crawl",
+  nm:{fr:"Amibe",en:"Amoeba"}, sz:"100–300 µm",
+  info:{fr:"Masse sans forme fixe, qui avance en poussant des pseudopodes et en y coulant son cytoplasme. Il faut la fixer un moment pour la voir bouger.",
+        en:"A shapeless mass that advances by pushing out pseudopods and pouring its cytoplasm into them. Watch a while before you see it move."}},
+ {id:"nem", kind:"nematode", L:820, W:26, n:2, mag:10, mot:"wriggle", spd:70,
+  nm:{fr:"Nématode",en:"Nematode"}, sz:"0,5–1,5 mm",
+  info:{fr:"Ver rond translucide qui se tortille en ondulations serrées. Visible à l'œil nu dans le tube, il paraît énorme sous l'objectif.",
+        en:"A translucent roundworm thrashing in tight undulations. Visible to the naked eye in the tube, it looks enormous under the objective."}}
+]}};
+
+/* ---------------- canevas ---------------- */
+const CW=200, CH=276;
+const SC={cx:100, cy:94, r:86, r2:86*86};
+const cvEl=document.getElementById("cv");
+const ctx=cvEl.getContext("2d",{alpha:false});
+ctx.imageSmoothingEnabled=false;
+
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const lerp=(a,b,t)=>a+(b-a)*t;
+function nz(x,y){let n=(x|0)*374761393+(y|0)*668265263;n=(n^(n>>13))*1274126177;
+  return((n^(n>>16))>>>0)/4294967296;}
+
+/* ---------------- tracé pixel avec flou ----------------
+   Le flou optique se rend en pixel art par dilatation et tramage : la forme
+   s'élargit, perd des pixels au hasard et se délave vers le fond.          */
+let BLUR=0, EXP=0;
+const fadeCache=new Map();
+function fade(hex,t){
+  const q=Math.min(6,Math.round(t*6));
+  if(q===0)return hex;
+  const k=hex+q;
+  let v=fadeCache.get(k);
+  if(v)return v;
+  const n=parseInt(hex.slice(1),16), b=parseInt(C.bg.slice(1),16), f=q/8.5;
+  const mix=(a,c)=>Math.round(a+(c-a)*f);
+  v="#"+(((mix((n>>16)&255,(b>>16)&255)<<16)|(mix((n>>8)&255,(b>>8)&255)<<8)|
+        mix(n&255,b&255))|0x1000000).toString(16).slice(1);
+  fadeCache.set(k,v);
+  return v;
+}
+function plot(g,x,y,c){
+  x|=0; y|=0;
+  const dx=x-SC.cx, dy=y-SC.cy;
+  if(dx*dx+dy*dy>SC.r2)return;
+  if(BLUR>0.02){
+    if(nz(x*7+13,y*11+5)<BLUR*0.80)return;
+    c=fade(c,BLUR);
+  }
+  g.fillStyle=c; g.fillRect(x,y,1,1);
+}
+function disc(g,cx,cy,r,fill,rim){
+  r+=EXP;
+  if(r<0.7){plot(g,cx,cy,rim||fill);return;}
+  const R=Math.ceil(r);
+  for(let y=-R;y<=R;y++)for(let x=-R;x<=R;x++){
+    const d=Math.sqrt(x*x+y*y);
+    if(d>r)continue;
+    plot(g,cx+x,cy+y,(rim&&d>r-1.05)?rim:fill);
+  }
+}
+function cap(g,cx,cy,L,W,ang,fill,rim){
+  const r=W/2+EXP, half=Math.max(L/2-W/2,0);
+  if(r<0.62&&L<1.4){plot(g,cx,cy,rim||fill);return;}
+  const ca=Math.cos(ang), sa=Math.sin(ang);
+  const bb=Math.ceil(L/2+r)+1;
+  for(let y=-bb;y<=bb;y++)for(let x=-bb;x<=bb;x++){
+    const lx=x*ca+y*sa, ly=-x*sa+y*ca;
+    const ax=Math.max(Math.abs(lx)-half,0);
+    const d=Math.sqrt(ax*ax+ly*ly);
+    if(d>r)continue;
+    plot(g,cx+x,cy+y,(rim&&d>r-0.92)?rim:fill);
+  }
+}
+function ell(g,cx,cy,a,b,ang,fill,rim){
+  a+=EXP; b+=EXP;
+  const ca=Math.cos(ang), sa=Math.sin(ang), bb=Math.ceil(Math.max(a,b))+1;
+  for(let y=-bb;y<=bb;y++)for(let x=-bb;x<=bb;x++){
+    const lx=x*ca+y*sa, ly=-x*sa+y*ca;
+    const d=(lx*lx)/(a*a)+(ly*ly)/(b*b);
+    if(d>1)continue;
+    plot(g,cx+x,cy+y,(rim&&d>0.62)?rim:fill);
+  }
+}
+function seg(g,x0,y0,x1,y1,w,fill,rim){
+  const dx=x1-x0, dy=y1-y0, len=Math.hypot(dx,dy);
+  if(len<0.4){disc(g,x0,y0,w/2,fill,rim);return;}
+  cap(g,(x0+x1)/2,(y0+y1)/2,len+w,w,Math.atan2(dy,dx),fill,rim);
+}
+
+/* ---------------- état ---------------- */
+let SAMPLE=null, SPECS=[], POP=[], GRID=null, GCELL=200, GN=0;
+const PCELL=200;                     // maille de génération procédurale, en µm
+let frameList=[];
+/* Les espèces de fond ne sont pas stockées : leurs individus sont recalculés
+   à chaque image à partir d'un hachage des coordonnées de la maille. La
+   préparation peut ainsi être aussi peuplée qu'une vraie, sans mémoire.     */
+function h3(a,b,c){
+  let n=(a|0)*374761393 ^ (b|0)*668265263 ^ (c|0)*2147483647;
+  n=Math.imul(n^(n>>>13),1274126177);
+  return ((n^(n>>>16))>>>0)/4294967296;
+}
+function wrapD(d){ if(d>WORLD/2)d-=WORLD; else if(d<-WORLD/2)d+=WORLD; return d; }
+let obj=0, stX=WORLD/2, stY=WORLD/2, zf=0;
+let found={}, phase="menu", tSim=0;
+let target=null;                       // organisme sous le réticule
+
+function ppm(){ return (SC.r*2)/OBJS[obj].fov; }     // pixels par micromètre
+
+/* ---------------- peuplement ---------------- */
+function buildWorld(key){
+  SAMPLE=key; SPECS=SAMPLES[key].sp; POP=[]; found={};
+  for(const sp of SPECS){
+    for(let i=0;i<sp.n;i++){
+      const vr=sp.vr||0.28;
+      POP.push({
+        sp, x:Math.random()*WORLD, y:Math.random()*WORLD,
+        z:ZMIN+Math.random()*(ZMAX-ZMIN),
+        ang:Math.random()*6.283,
+        tilt:Math.random()*1.4-0.7,          // inclinaison hors du plan
+        spin:(Math.random()-0.5)*0.5,
+        s:1+(Math.random()-0.5)*2*vr,
+        ph:Math.random()*6.283,
+        hd:Math.random()*6.283,              // cap de nage
+        tmr:Math.random()*2,
+        seed:(Math.random()*4096)|0
+      });
+    }
+  }
+  frameList=[];
+  GN=Math.round(WORLD/GCELL);
+  GRID=new Array(GN*GN); for(let i=0;i<GRID.length;i++)GRID[i]=[];
+  for(const o of POP){
+    const gx=clamp((o.x/GCELL)|0,0,GN-1), gy=clamp((o.y/GCELL)|0,0,GN-1);
+    GRID[gy*GN+gx].push(o);
+  }
+  stX=WORLD/2; stY=WORLD/2; zf=0; obj=0; setObj(0);
+}
+function regrid(o,ox,oy){
+  const a=clamp((ox/GCELL)|0,0,GN-1), b=clamp((oy/GCELL)|0,0,GN-1);
+  const c=clamp((o.x/GCELL)|0,0,GN-1), d=clamp((o.y/GCELL)|0,0,GN-1);
+  if(a===c&&b===d)return;
+  const from=GRID[b*GN+a], i=from.indexOf(o);
+  if(i>=0)from.splice(i,1);
+  GRID[d*GN+c].push(o);
+}
+function visible(margin){
+  const half=OBJS[obj].fov/2+margin;
+  const out=[];
+  const x0=Math.floor((stX-half)/GCELL), x1=Math.floor((stX+half)/GCELL);
+  const y0=Math.floor((stY-half)/GCELL), y1=Math.floor((stY+half)/GCELL);
+  for(let gy=y0;gy<=y1;gy++)for(let gx=x0;gx<=x1;gx++){
+    const wx=((gx%GN)+GN)%GN, wy=((gy%GN)+GN)%GN;   // la préparation se referme
+    const c=GRID[wy*GN+wx];
+    for(let i=0;i<c.length;i++)out.push(c[i]);
+  }
+  return out;
+}
+
+function procGen(out){
+  const k=ppm(), half=OBJS[obj].fov/2+40;
+  const x0=Math.floor((stX-half)/PCELL), x1=Math.floor((stX+half)/PCELL);
+  const y0=Math.floor((stY-half)/PCELL), y1=Math.floor((stY+half)/PCELL);
+  if((x1-x0+1)*(y1-y0+1)>42)return;                 // garde-fou de coût
+  const PN=Math.round(WORLD/PCELL);
+  for(let si=0;si<SPECS.length;si++){
+    const sp=SPECS[si];
+    if(!sp.proc)continue;
+    if(Math.max(sp.L,sp.W)*k<0.8)continue;          // sous le pouvoir séparateur
+    const J=sp.jit;
+    for(let gy=y0;gy<=y1;gy++)for(let gx=x0;gx<=x1;gx++){
+      const wx=((gx%PN)+PN)%PN, wy=((gy%PN)+PN)%PN;
+      for(let i=0;i<sp.dens;i++){
+        const b=si*7919+i*13;
+        const a1=h3(wx,wy,b+1), a2=h3(wx,wy,b+2), a3=h3(wx,wy,b+3), a4=h3(wx,wy,b+4);
+        const w1=0.6+a3*1.3, w2=1.5+a4*1.1;
+        const p1=a1*6.283, p2=a2*6.283;
+        // marche bornée : la trajectoire reste dans sa maille mais paraît libre
+        const ox=Math.sin(w1*tSim+p1)*J + Math.sin(w2*tSim+p2)*J*0.5;
+        const oy=Math.cos(w1*tSim+p2)*J + Math.cos(w2*tSim+p1)*J*0.5;
+        const vx=w1*Math.cos(w1*tSim+p1)+w2*0.5*Math.cos(w2*tSim+p2);
+        const vy=-w1*Math.sin(w1*tSim+p2)-w2*0.5*Math.sin(w2*tSim+p1);
+        const wxp=(gx+a1)*PCELL+ox, wyp=(gy+a2)*PCELL+oy;
+        // écarté tout de suite s'il tombe hors du champ : inutile de le porter
+        if(Math.abs(wxp-stX)>half||Math.abs(wyp-stY)>half)continue;
+        out.push({sp, proc:true,
+          x:wxp, y:wyp,
+          z:ZMIN+a3*(ZMAX-ZMIN)+Math.sin(tSim*0.5+p1)*0.6,
+          ang: J>6 ? Math.atan2(vy,vx) : a4*6.283+tSim*0.35*(a1-0.5),
+          tilt:(a1-0.5)*2.6, s:1+(a2-0.5)*2*(sp.vr||0.28),
+          ph:a3*6.283+tSim*1.7, seed:(a4*4096)|0});
+      }
+    }
+  }
+}
+function buildFrame(){ const out=visible(120); procGen(out); return out; }
+
+/* ---------------- mouvement ----------------
+   Brownien : déplacement quadratique moyen inversement proportionnel à la
+   taille, comme le prévoit Stokes-Einstein. Nage bactérienne : course en
+   ligne droite puis culbute. Ciliés : nage rapide en rotation sur l'axe.  */
+function step(dt){
+  const list=visible(60), k=ppm();
+  for(const o of list){
+    const sp=o.sp;
+    if(sp.proc)continue;
+    // sous le pouvoir séparateur de l'objectif, l'objet n'existe pas à l'écran
+    if(Math.max(sp.L,sp.W)*o.s*k<0.55)continue;
+    const ox=o.x, oy=o.y;
+    const d=Math.max(sp.L,sp.W);
+    o.ph+=dt*1.7;
+    o.tilt+=o.spin*dt*0.30;
+    if(o.tilt>1.55||o.tilt<-1.55)o.spin*=-1;
+    switch(sp.mot){
+      case "brown":{
+        const amp=3.4/Math.sqrt(d)*Math.sqrt(dt);
+        o.x+=(Math.random()*2-1)*amp*2.2;
+        o.y+=(Math.random()*2-1)*amp*2.2;
+        o.z+=(Math.random()*2-1)*amp*0.9;
+        o.ang+=(Math.random()*2-1)*amp*0.5;
+        break;}
+      case "swim":{
+        o.tmr-=dt;
+        if(o.tmr<=0){ o.hd+=(Math.random()-0.5)*(sp.spd>200?0.9:3.4);
+                      o.tmr=0.5+Math.random()*1.6; }
+        o.hd+=Math.sin(o.ph*1.6)*dt*0.5;
+        o.x+=Math.cos(o.hd)*sp.spd*dt;
+        o.y+=Math.sin(o.hd)*sp.spd*dt;
+        o.z+=(Math.random()*2-1)*2.2*dt;
+        o.ang=o.hd;
+        break;}
+      case "tumble":{                       // culbute en roue de Listeria
+        o.tmr-=dt;
+        if(o.tmr<=0){ o.hd=Math.random()*6.283; o.tmr=0.18+Math.random()*0.5; }
+        o.x+=Math.cos(o.hd)*sp.spd*dt;
+        o.y+=Math.sin(o.hd)*sp.spd*dt;
+        o.ang+=dt*7.5;
+        o.z+=(Math.random()*2-1)*2.6*dt;
+        break;}
+      case "glide":{                        // diatomée le long du raphé
+        o.x+=Math.cos(o.ang)*sp.spd*dt;
+        o.y+=Math.sin(o.ang)*sp.spd*dt;
+        o.ang+=Math.sin(o.ph*0.4)*dt*0.22;
+        break;}
+      case "crawl":{
+        o.x+=Math.cos(o.hd)*7*dt;
+        o.y+=Math.sin(o.hd)*7*dt;
+        o.hd+=(Math.random()-0.5)*dt*1.4;
+        break;}
+      case "wriggle":{
+        o.x+=Math.cos(o.hd)*sp.spd*dt;
+        o.y+=Math.sin(o.hd)*sp.spd*dt;
+        o.hd+=Math.sin(o.ph*3.4)*dt*2.6;
+        o.ang=o.hd;
+        break;}
+      case "spring":{                       // pédoncule contractile
+        o.tmr-=dt;
+        if(o.tmr<=0){ o.ph=0; o.tmr=3+Math.random()*7; }
+        break;}
+    }
+    if(o.x<0)o.x+=WORLD; else if(o.x>=WORLD)o.x-=WORLD;
+    if(o.y<0)o.y+=WORLD; else if(o.y>=WORLD)o.y-=WORLD;
+    if(o.z<ZMIN)o.z=ZMIN; else if(o.z>ZMAX)o.z=ZMAX;
+    regrid(o,ox,oy);
+  }
+}
+
+/* ---------------- rendu du champ ---------------- */
+function drawField(g){
+  const O=OBJS[obj], k=ppm();
+  // fond clair d'un fond blanc, légèrement grumeleux
+  for(let y=-SC.r;y<=SC.r;y++){
+    const w=Math.floor(Math.sqrt(SC.r*SC.r-y*y));
+    g.fillStyle=C.bg;
+    g.fillRect(SC.cx-w, SC.cy+y, w*2+1, 1);
+  }
+  for(let y=-SC.r;y<=SC.r;y+=2){
+    const w=Math.floor(Math.sqrt(SC.r*SC.r-y*y));
+    for(let x=-w;x<=w;x+=2){
+      const px=SC.cx+x, py=SC.cy+y;
+      const h=nz(px+((stX/40)|0), py+((stY/40)|0));
+      if(h>0.90){ g.fillStyle=C.bg2; g.fillRect(px,py,1,1); }
+    }
+  }
+  drawHaze(g,k);
+  // les objets, du plus profond au plus proche
+  const list=frameList;
+  const draw=[];
+  for(const o of list){
+    const sp=o.sp;
+    const dx=o.proc?(o.x-stX):wrapD(o.x-stX), dy=o.proc?(o.y-stY):wrapD(o.y-stY);
+    const px=SC.cx+dx*k, py=SC.cy+dy*k;
+    const rad=Math.max(sp.L,sp.W)*o.s*k*0.6+2;
+    if(px<SC.cx-SC.r-rad||px>SC.cx+SC.r+rad||py<SC.cy-SC.r-rad||py>SC.cy+SC.r+rad)continue;
+    /* Hors du plan de netteté rien ne disparaît : l'objet se dilue en voile.
+       Net jusqu'à un cinquième de la profondeur de champ, puis flou croissant
+       jusqu'à se fondre dans le fond six profondeurs plus loin.            */
+    const dz=Math.abs(o.z-zf)/O.dof;
+    const blur=clamp((dz-0.20)/5.5,0,1);
+    if(blur>=0.985)continue;
+    // en dessous du pouvoir séparateur, l'objet ne fait plus qu'un grain
+    const app=Math.max(sp.L,sp.W)*o.s*k;
+    if(app<0.55)continue;
+    draw.push({o,px,py,blur,app});
+  }
+  draw.sort((a,b)=>b.o.z-a.o.z);
+  for(const d of draw){
+    BLUR=d.blur; EXP=d.blur*Math.min(2.4, 0.7+d.app*0.55);
+    drawOrg(g,d.o,d.px,d.py,k,false);
+  }
+  BLUR=0; EXP=0;
+
+  // réticule sur la cible identifiable
+  if(target){
+    const dx=target.proc?(target.x-stX):wrapD(target.x-stX), dy=target.proc?(target.y-stY):wrapD(target.y-stY);
+    const px=Math.round(SC.cx+dx*k), py=Math.round(SC.cy+dy*k);
+    const r=Math.max(6,Math.min(28,Math.max(target.sp.L,target.sp.W)*target.s*k*0.75+4));
+    const t=(tSim*3)|0;
+    for(let a=0;a<4;a++){
+      const ax=a<2?-1:1, ay=(a%2)?-1:1;
+      for(let i=0;i<4;i++){
+        if(((i+t)&3)===3)continue;
+        plot(g,px+ax*(r-i),py+ay*r,"#00AAB6");
+        plot(g,px+ax*r,py+ay*(r-i),"#00AAB6");
+      }
+    }
+  }
+  g.drawImage(chromeC,0,0);            // vignettage et monture, cuits une fois
+}
+
+/* La monture et le vignettage ne bougent jamais : on les dessine une seule
+   fois dans un canevas hors écran, au lieu de 3 500 pixels par image.      */
+const chromeC=document.createElement("canvas");
+chromeC.width=CW; chromeC.height=CH;
+(function bakeChrome(){
+  const g=chromeC.getContext("2d");
+  g.clearRect(0,0,CW,CH);
+  for(let y=-SC.r;y<=SC.r;y++){
+    const w=Math.floor(Math.sqrt(SC.r*SC.r-y*y));
+    for(const x of [-w,-w+1,w-1,w]){
+      const px=SC.cx+x, py=SC.cy+y;
+      if(nz(px*3,py*3)>0.35){g.fillStyle=C.bgv;g.fillRect(px,py,1,1);}
+    }
+  }
+  for(let a=0;a<720;a++){
+    const rr=a*Math.PI/360;
+    for(let q=1;q<=4;q++){
+      g.fillStyle=q===1?"#00AAB6":"#16222c";
+      g.fillRect(Math.round(SC.cx+Math.cos(rr)*(SC.r+q)),
+                 Math.round(SC.cy+Math.sin(rr)*(SC.r+q)),1,1);
+    }
+  }
+})();
+
+/* Ce que l'objectif ne sépare pas ne disparaît pas non plus : une population
+   dense d'objets sous-résolus se voit comme un grain général du champ.      */
+function drawHaze(g,k){
+  let dens=0, col=null, best=0;
+  for(const sp of SPECS){
+    if(!sp.proc)continue;
+    const app=Math.max(sp.L,sp.W)*k;
+    if(app>=0.8)continue;
+    const c=sp.dens*Math.min(1,app*app*2.4);
+    dens+=c;
+    if(c>best){ best=c;
+      col = sp.kind==="algae"?C.greenR : sp.kind==="globule"?C.fatR : C.bactR; }
+  }
+  if(dens<=1||!col)return;
+  const p=clamp(dens/1400,0,0.42);
+  for(let y=-SC.r;y<=SC.r;y++){
+    const w=Math.floor(Math.sqrt(SC.r*SC.r-y*y));
+    const wy=((stY+y/k)*0.55)|0;
+    for(let x=-w;x<=w;x++){
+      if(h3((((stX+x/k)*0.55)|0), wy, 7) < p){
+        g.fillStyle=col; g.fillRect(SC.cx+x, SC.cy+y, 1, 1);
+      }
+    }
+  }
+}
+
+/* ---------------- dessin des organismes ---------------- */
+function drawOrg(g,o,px,py,k,silh){
+  const sp=o.sp, s=o.s;
+  const fx=Math.cos(o.tilt);                 // raccourci de perspective en z
+  const L=sp.L*s*k*Math.abs(fx)+ (sp.kind==="rod"?0:0);
+  const W=sp.W*s*k;
+  const A=o.ang;
+  const P=silh?{f:"#0c1218",r:"#0c1218"}:null;
+  const col=(f,r)=>P?[P.f,P.r]:[f,r];
+
+  switch(sp.kind){
+
+  case "rod": {
+    const [f,r]=col(C.bact,C.bactR);
+    cap(g,px,py,Math.max(L,W),W,A,f,r);
+    break; }
+
+  case "spore": {
+    const [f,r]=col(C.spore,C.sporeR);
+    ell(g,px,py,Math.max(L,W)/2,W/2,A,f,r);
+    if(!silh&&W>2.4)plot(g,px,py,"#ffffff");
+    break; }
+
+  case "chain": {
+    const [f,r]=col(sp.col==="olive"?C.olive:C.bact, sp.col==="olive"?C.oliveR:C.bactR);
+    const n=sp.seg, d=W*0.92;
+    for(let i=0;i<n;i++){
+      const t=i-(n-1)/2;
+      disc(g,px+Math.cos(A)*t*d*fx, py+Math.sin(A)*t*d*fx, W/2, f, r);
+    }
+    break; }
+
+  case "cluster": {
+    const [f,r]=col(C.bact,C.bactR);
+    for(let i=0;i<sp.seg;i++){
+      const a=(nz(o.seed,i)*6.283), rr=nz(o.seed+1,i)*W*1.15;
+      disc(g,px+Math.cos(a)*rr,py+Math.sin(a)*rr,W/2,f,r);
+    }
+    break; }
+
+  case "globule": {
+    const [f,r]=col(C.fat,C.fatR);
+    disc(g,px,py,W/2,f,r);
+    if(!silh&&W>4)plot(g,px-W*0.2,py-W*0.2,"#ffffff");
+    break; }
+
+  case "leuco": {
+    const [f,r]=col(C.prot,C.protR);
+    disc(g,px,py,W/2,f,r);
+    if(!silh&&W>5)disc(g,px+W*0.12,py-W*0.08,W*0.28,C.nucl,null);
+    break; }
+
+  case "yeast": {
+    const [f,r]=col(C.yeast,C.yeastR);
+    ell(g,px,py,Math.max(L,W)/2,W/2,A,f,r);
+    break; }
+
+  case "bud": {
+    const [f,r]=col(C.yeast,C.yeastR);
+    ell(g,px,py,Math.max(L,W)/2,W/2,A,f,r);
+    const bx=px+Math.cos(A)*L*0.48, by=py+Math.sin(A)*L*0.48;
+    disc(g,bx,by,W*0.32,f,r);
+    break; }
+
+  case "algae": {
+    const [f,r]=col(C.green,C.greenR);
+    disc(g,px,py,W/2,f,r);
+    if(!silh&&W>3.5)plot(g,px-1,py-1,C.grn2);
+    break; }
+
+  case "scenedesmus": {
+    const [f,r]=col(C.green,C.greenR);
+    const n=sp.seg, cw=L/n;
+    for(let i=0;i<n;i++){
+      const t=i-(n-1)/2;
+      ell(g,px+Math.cos(A+1.5708)*t*cw*fx, py+Math.sin(A+1.5708)*t*cw*fx,
+          W/2, cw*0.46, A, f, r);
+    }
+    if(!silh&&L>16){                              // épines des cellules externes
+      for(const sgn of [-1,1]){
+        const t=sgn*(n-1)/2*cw;
+        const bx=px+Math.cos(A+1.5708)*t*fx, by=py+Math.sin(A+1.5708)*t*fx;
+        seg(g,bx,by,bx+Math.cos(A)*W*0.9,by+Math.sin(A)*W*0.9,1,r,null);
+        seg(g,bx,by,bx-Math.cos(A)*W*0.9,by-Math.sin(A)*W*0.9,1,r,null);
+      }
+    }
+    break; }
+
+  case "diatom": {
+    const [f,r]=col(C.diat,C.diatR);
+    ell(g,px,py,L/2,W/2,A,f,r);
+    if(!silh&&L>10){                              // stries transapicales
+      const n=Math.max(3,Math.round(L/3));
+      for(let i=1;i<n;i++){
+        const t=(i/n-0.5)*L*0.92;
+        const bx=px+Math.cos(A)*t, by=py+Math.sin(A)*t;
+        const hw=W/2*Math.sqrt(Math.max(0,1-(2*t/L)**2))*0.85;
+        seg(g,bx-Math.cos(A+1.5708)*hw,by-Math.sin(A+1.5708)*hw,
+              bx+Math.cos(A+1.5708)*hw,by+Math.sin(A+1.5708)*hw,1,r,null);
+      }
+    }
+    break; }
+
+  case "filament": {
+    const [f,r]=col(sp.col==="green"?C.green:C.hyph, sp.col==="green"?C.greenR:C.hyphR);
+    const n=10, sl=L/n;
+    let cx=px-Math.cos(A)*L/2, cy=py-Math.sin(A)*L/2, a=A;
+    for(let i=0;i<n;i++){
+      a+=Math.sin(o.ph*0.7+i*0.8)*0.05;
+      const nx2=cx+Math.cos(a)*sl, ny2=cy+Math.sin(a)*sl;
+      seg(g,cx,cy,nx2,ny2,W,f,r);
+      cx=nx2; cy=ny2;
+    }
+    break; }
+
+  case "spirogyra": {
+    const [f,r]=col(C.hyph,C.hyphR);
+    const n=8, sl=L/n;
+    let cx=px-Math.cos(A)*L/2, cy=py-Math.sin(A)*L/2;
+    for(let i=0;i<n;i++){
+      const nx2=cx+Math.cos(A)*sl, ny2=cy+Math.sin(A)*sl;
+      seg(g,cx,cy,nx2,ny2,W,f,r);
+      if(!silh&&W>4){                             // chloroplaste en hélice
+        for(let t=0;t<8;t++){
+          const u=t/8, bx=cx+(nx2-cx)*u, by=cy+(ny2-cy)*u;
+          const off=Math.sin(u*6.283+i*1.1)*W*0.34;
+          plot(g,bx+Math.cos(A+1.5708)*off,by+Math.sin(A+1.5708)*off,C.green);
+        }
+        seg(g,nx2,ny2,nx2+Math.cos(A+1.5708)*W*0.5,ny2+Math.sin(A+1.5708)*W*0.5,1,r,null);
+        seg(g,nx2,ny2,nx2-Math.cos(A+1.5708)*W*0.5,ny2-Math.sin(A+1.5708)*W*0.5,1,r,null);
+      }
+      cx=nx2; cy=ny2;
+    }
+    break; }
+
+  case "hypha": {
+    const [f,r]=col(C.hyph,C.hyphR);
+    const n=9, sl=L/n;
+    let cx=px-Math.cos(A)*L/2, cy=py-Math.sin(A)*L/2, a=A;
+    for(let i=0;i<n;i++){
+      a+=(nz(o.seed,i)-0.5)*0.42;
+      const nx2=cx+Math.cos(a)*sl, ny2=cy+Math.sin(a)*sl;
+      seg(g,cx,cy,nx2,ny2,W,f,r);
+      if(!silh&&W>2.4)                            // cloison
+        seg(g,nx2-Math.cos(a+1.5708)*W/2,ny2-Math.sin(a+1.5708)*W/2,
+              nx2+Math.cos(a+1.5708)*W/2,ny2+Math.sin(a+1.5708)*W/2,1,r,null);
+      if(i===4&&!silh&&L>50){                     // ramification
+        let bx=nx2,by=ny2,ba=a+1.0;
+        for(let j=0;j<3;j++){
+          const ex=bx+Math.cos(ba)*sl*0.8, ey=by+Math.sin(ba)*sl*0.8;
+          seg(g,bx,by,ex,ey,W*0.82,f,r); bx=ex; by=ey; ba+=0.3;
+        }
+      }
+      cx=nx2; cy=ny2;
+    }
+    break; }
+
+  case "arthro": {
+    const [f,r]=col(C.hyph,C.hyphR);
+    const n=sp.seg, cl=L/n;
+    for(let i=0;i<n;i++){
+      const t=(i-(n-1)/2)*cl*1.02;
+      const bx=px+Math.cos(A)*t*fx, by=py+Math.sin(A)*t*fx;
+      ell(g,bx,by,cl*0.48,W/2,A,f,r);
+    }
+    break; }
+
+  case "fibre": {
+    const [f,r]=col("#d8d2c0","#9a9282");
+    const n=12, sl=L/n;
+    let cx=px-Math.cos(A)*L/2, cy=py-Math.sin(A)*L/2, a=A;
+    for(let i=0;i<n;i++){
+      a+=(nz(o.seed,i)-0.5)*0.20;
+      const nx2=cx+Math.cos(a)*sl, ny2=cy+Math.sin(a)*sl;
+      seg(g,cx,cy,nx2,ny2,W*(0.8+0.2*Math.sin(i*1.3)),f,r);
+      cx=nx2; cy=ny2;
+    }
+    break; }
+
+  case "debris": {
+    const [f,r]=col(C.deb,C.debR);
+    const n=7;
+    for(let i=0;i<n;i++){
+      const a=i/n*6.283+A;
+      const rr=(0.35+nz(o.seed,i)*0.75)*Math.max(L,W)/2;
+      disc(g,px+Math.cos(a)*rr*0.6,py+Math.sin(a)*rr*0.6,Math.max(1,rr*0.42),f,r);
+    }
+    break; }
+
+  case "biofilm": {
+    const [f,r]=col("#cfd3c4","#93998a");
+    for(let i=0;i<9;i++){
+      const a=i/9*6.283+A, rr=(0.4+nz(o.seed,i)*0.6)*L/2;
+      disc(g,px+Math.cos(a)*rr*0.55,py+Math.sin(a)*rr*0.55,L*0.16,f,r);
+    }
+    if(!silh)for(let i=0;i<14;i++){               // cellules prises dans la matrice
+      const a=nz(o.seed+2,i)*6.283, rr=nz(o.seed+3,i)*L*0.42;
+      disc(g,px+Math.cos(a)*rr,py+Math.sin(a)*rr,Math.max(0.6,k*0.5),C.bactR,null);
+    }
+    break; }
+
+  case "mucor": {
+    const [f,r]=col(C.hyph,C.hyphR);
+    const hx=px, hy=py-L*0.30;
+    seg(g,px,py+L*0.42,hx,hy,W*0.30,f,r);         // pied non cloisonné
+    const [sf,sr]=col("#8e8778","#4d4840");
+    disc(g,hx,hy,L*0.30,sf,sr);                   // sporocyste
+    if(!silh&&L>26)for(let i=0;i<26;i++){         // spores visibles par transparence
+      const a=nz(o.seed,i)*6.283, rr=Math.sqrt(nz(o.seed+1,i))*L*0.25;
+      plot(g,hx+Math.cos(a)*rr,hy+Math.sin(a)*rr,"#3b3730");
+    }
+    if(!silh&&L>34)disc(g,hx,hy+L*0.16,L*0.09,"#c4bda c",null);
+    break; }
+
+  case "aspergillus": {
+    const [f,r]=col(C.hyph,C.hyphR);
+    const vy=py-L*0.22, vr=L*0.16;
+    seg(g,px,py+L*0.45,px,vy,W*0.5,f,r);          // conidiophore lisse
+    disc(g,px,vy,vr,f,r);                         // vésicule
+    const [cf,cr]=col(C.conid,C.conidR);
+    const n=silh?12:18;
+    for(let i=0;i<n;i++){
+      const a=i/n*6.283;
+      const bx=px+Math.cos(a)*vr, by=vy+Math.sin(a)*vr;
+      const ex=px+Math.cos(a)*vr*1.5, ey=vy+Math.sin(a)*vr*1.5;
+      seg(g,bx,by,ex,ey,Math.max(1,L*0.035),cf,cr);   // phialides rayonnantes
+      if(!silh)for(let c2=0;c2<3;c2++)                // chaînettes de conidies
+        disc(g,px+Math.cos(a)*vr*(1.62+c2*0.20), vy+Math.sin(a)*vr*(1.62+c2*0.20),
+             Math.max(0.7,L*0.030),cf,cr);
+    }
+    break; }
+
+  case "penicillium": {
+    const [f,r]=col(C.hyph,C.hyphR);
+    const ty=py-L*0.16;
+    seg(g,px,py+L*0.44,px,ty,W*0.55,f,r);         // conidiophore
+    const [cf,cr]=col(C.conid,C.conidR);
+    for(const sgn of [-1,1]){
+      const mx=px+sgn*L*0.10, my=ty-L*0.07;
+      seg(g,px,ty,mx,my,W*0.42,f,r);              // métules
+      for(let p=-1;p<=1;p++){
+        const fx2=mx+p*L*0.055, fy2=my-L*0.10;
+        seg(g,mx,my,fx2,fy2,W*0.34,f,r);          // phialides
+        if(!silh)for(let c2=0;c2<4;c2++)          // chaînettes de conidies
+          disc(g,fx2+p*L*0.012*c2, fy2-L*0.055*(c2+1), Math.max(0.7,L*0.036),cf,cr);
+      }
+    }
+    break; }
+
+  case "euglena": {
+    const [f,r]=col(C.green,C.greenR);
+    const wob=Math.sin(o.ph*2.1)*L*0.05;
+    ell(g,px,py,L/2,W/2*(1+Math.sin(o.ph*2.1)*0.12),A,f,r);
+    if(!silh){
+      const hx=px+Math.cos(A)*L*0.48, hy=py+Math.sin(A)*L*0.48;
+      plot(g,hx-Math.cos(A)*2,hy-Math.sin(A)*2,"#c04a3a");   // stigma
+      let bx=hx,by=hy;
+      for(let i=0;i<5;i++){                                   // flagelle antérieur
+        const a2=A+Math.sin(o.ph*4+i*0.9)*0.55;
+        const ex=bx+Math.cos(a2)*L*0.13, ey=by+Math.sin(a2)*L*0.13;
+        seg(g,bx,by,ex,ey,1,C.protR,null); bx=ex; by=ey;
+      }
+      void wob;
+    }
+    break; }
+
+  case "paramecium": {
+    const [f,r]=col(C.prot,C.protR);
+    ell(g,px,py,L/2,W/2,A,f,r);
+    if(!silh){
+      const n=Math.max(8,Math.round(L/4));
+      for(let i=0;i<n;i++){                                   // ciliature somatique
+        const t=(i/n-0.5)*L*0.94;
+        const hw=W/2*Math.sqrt(Math.max(0,1-(2*t/L)**2));
+        for(const sgn of [-1,1]){
+          const bx=px+Math.cos(A)*t+Math.cos(A+1.5708)*hw*sgn;
+          const by=py+Math.sin(A)*t+Math.sin(A+1.5708)*hw*sgn;
+          const a2=A+1.5708*sgn+Math.sin(o.ph*8+i*0.7)*0.5;
+          plot(g,bx+Math.cos(a2)*2.2,by+Math.sin(a2)*2.2,r);
+        }
+      }
+      disc(g,px,py,W*0.16,"#a49d8c",null);                    // macronoyau
+      for(const sgn of [-1,1])                                // vacuoles pulsatiles
+        disc(g,px+Math.cos(A)*sgn*L*0.26,py+Math.sin(A)*sgn*L*0.26,W*0.10,"#eae6d8",r);
+    }
+    break; }
+
+  case "vorticella": {
+    const [f,r]=col(C.prot,C.protR);
+    const contracted=o.ph<0.55;
+    const stalkLen=contracted?L*0.5:L*1.5;
+    const topY=py-stalkLen*0.5;
+    if(contracted){                                           // pédoncule enroulé
+      for(let i=0;i<16;i++){
+        const u=i/16, yy=py+stalkLen*0.5-u*stalkLen;
+        plot(g,px+Math.sin(u*22)*W*0.22,yy,r);
+      }
+    }else seg(g,px,py+stalkLen*0.5,px,topY,Math.max(1,W*0.08),f,r);
+    const by=topY;
+    ell(g,px,by,W*0.42,W*0.34,1.5708,f,r);                    // calice en cloche
+    if(!silh){
+      for(let i=-3;i<=3;i++)                                  // couronne ciliée
+        plot(g,px+i*W*0.11,by-W*0.34-1-(Math.sin(o.ph*9+i)>0?1:0),r);
+    }
+    break; }
+
+  case "rotifer": {
+    const [f,r]=col(C.prot,C.protR);
+    ell(g,px,py,L/2,W/2,A,f,r);
+    if(!silh){
+      const hx=px+Math.cos(A)*L*0.42, hy=py+Math.sin(A)*L*0.42;
+      for(const sgn of [-1,1]){                               // couronne rotatrice
+        const cx2=hx+Math.cos(A+1.5708)*sgn*W*0.26, cy2=hy+Math.sin(A+1.5708)*sgn*W*0.26;
+        disc(g,cx2,cy2,W*0.20,f,r);
+        for(let i=0;i<7;i++){
+          const a2=o.ph*7*sgn+i/7*6.283;
+          plot(g,cx2+Math.cos(a2)*W*0.26,cy2+Math.sin(a2)*W*0.26,r);
+        }
+      }
+      const tx=px-Math.cos(A)*L*0.46, ty=py-Math.sin(A)*L*0.46;
+      seg(g,tx,ty,tx-Math.cos(A)*L*0.16,ty-Math.sin(A)*L*0.16,W*0.16,f,r);  // pied
+      disc(g,px,py,W*0.18,"#b5ae9c",null);                    // mastax
+    }
+    break; }
+
+  case "amoeba": {
+    const [f,r]=col(C.prot,C.protR);
+    const n=9;
+    for(let i=0;i<n;i++){
+      const a=i/n*6.283;
+      const rr=(0.42+0.58*(0.5+0.5*Math.sin(o.ph*0.6+i*1.9+o.seed)))*L*0.42;
+      disc(g,px+Math.cos(a)*rr*0.65,py+Math.sin(a)*rr*0.65,L*0.17,f,r);
+    }
+    disc(g,px,py,L*0.20,f,r);
+    if(!silh){
+      disc(g,px+L*0.06,py-L*0.04,L*0.055,"#9d9686",null);     // noyau
+      for(let i=0;i<7;i++){                                   // inclusions
+        const a=nz(o.seed,i)*6.283, rr=nz(o.seed+1,i)*L*0.22;
+        plot(g,px+Math.cos(a)*rr,py+Math.sin(a)*rr,"#8e8878");
+      }
+    }
+    break; }
+
+  case "nematode": {
+    const [f,r]=col("#d5cfbd","#8f8878");
+    const n=14, sl=L/n;
+    let cx=px-Math.cos(A)*L/2, cy=py-Math.sin(A)*L/2;
+    for(let i=0;i<n;i++){
+      const a=A+Math.sin(o.ph*2.6+i*0.85)*0.85;
+      const nx2=cx+Math.cos(a)*sl, ny2=cy+Math.sin(a)*sl;
+      const taper=Math.sin(Math.PI*(i+0.5)/n)*0.55+0.45;
+      seg(g,cx,cy,nx2,ny2,W*taper,f,r);
+      cx=nx2; cy=ny2;
+    }
+    break; }
+  }
+}
+
+/* ---------------- molettes ---------------- */
+const KNOBS=[
+ {id:"x",     x:8,   y:196, w:64, h:22, axis:"h", lbl:"k_x"},
+ {id:"y",     x:8,   y:226, w:64, h:22, axis:"v", lbl:"k_y"},
+ {id:"macro", x:128, y:196, w:64, h:22, axis:"v", lbl:"k_macro"},
+ {id:"micro", x:128, y:226, w:64, h:22, axis:"v", lbl:"k_micro"}
+];
+const knobPos={x:0,y:0,macro:0,micro:0};
+
+function drawKnob(g,K){
+  const {x,y,w,h}=K;
+  g.fillStyle="#0d141c"; g.fillRect(x-1,y-1,w+2,h+2);
+  g.fillStyle="#1d2b36"; g.fillRect(x,y,w,h);
+  const p=knobPos[K.id];
+  if(K.axis==="h"){
+    for(let i=0;i<w;i+=4){
+      const u=((i+p*0.6)%w+w)%w;
+      const sh=Math.sin(u/w*Math.PI);
+      g.fillStyle=sh>0.55?"#4d7181":sh>0.25?"#33505e":"#22333e";
+      g.fillRect(x+u,y+2,2,h-4);
+    }
+    g.fillStyle="#0a1016"; g.fillRect(x,y,w,2); g.fillRect(x,y+h-2,w,2);
+  }else{
+    for(let i=0;i<h;i+=4){
+      const u=((i+p*0.6)%h+h)%h;
+      const sh=Math.sin(u/h*Math.PI);
+      g.fillStyle=sh>0.55?"#4d7181":sh>0.25?"#33505e":"#22333e";
+      g.fillRect(x+2,y+u,w-4,2);
+    }
+    g.fillStyle="#0a1016"; g.fillRect(x,y,2,h); g.fillRect(x+w-2,y,2,h);
+  }
+  g.fillStyle="#5f8ea4";
+  g.fillRect(x,y,w,1); g.fillRect(x,y+h-1,w,1);
+  g.fillRect(x,y,1,h); g.fillRect(x+w-1,y,1,h);
+  g.fillStyle="#6d8592"; g.font="6px monospace";
+  g.fillText(T(K.lbl),x+1,y+h+7);
+}
+
+function drawPanel(g){
+  g.fillStyle="#0a0f15"; g.fillRect(0,186,CW,CH-186);
+  g.fillStyle="#26323f"; g.fillRect(0,186,CW,1);
+  for(const K of KNOBS)drawKnob(g,K);
+
+  // colonne de profondeur : où se trouve le plan de netteté dans la goutte
+  const bx=88, by=196, bw=24, bh=52;
+  g.fillStyle="#0d141c"; g.fillRect(bx-1,by-1,bw+2,bh+2);
+  g.fillStyle="#121c24"; g.fillRect(bx,by,bw,bh);
+  for(let i=0;i<bh;i+=3){ g.fillStyle="#16232c"; g.fillRect(bx+1,by+i,bw-2,1); }
+  const zt=(zf-ZMIN)/(ZMAX-ZMIN);
+  if(zt>=-0.12&&zt<=1.12){
+    const yy=Math.round(by+clamp(zt,0,1)*(bh-1));
+    g.fillStyle="#FFDD00"; g.fillRect(bx,yy,bw,1);
+    g.fillStyle="#00AAB6"; g.fillRect(bx-1,yy-1,2,3); g.fillRect(bx+bw-1,yy-1,2,3);
+  }
+  g.fillStyle="#6d8592"; g.font="6px monospace";
+  g.fillText(T("lbl_depth"),bx-6,by+bh+7);
+  g.fillStyle="#cfe3e6"; g.font="7px monospace";
+  g.fillText((zf>=0?"+":"")+zf.toFixed(1)+"um",bx-4,by-3);
+}
+
+/* ---------------- boucle ---------------- */
+let last=performance.now();
+function loop(now){
+  let dt=(now-last)/1000; last=now;
+  if(dt>0.05)dt=0.05;
+  if(phase==="scope"){ tSim+=dt; step(dt); frameList=buildFrame(); pickTarget(); }
+  render();
+  requestAnimationFrame(loop);
+}
+function render(){
+  const g=ctx;
+  g.fillStyle="#07090d"; g.fillRect(0,0,CW,CH);
+  if(phase==="menu"){ drawPanel(g); return; }
+  drawField(g);
+  drawPanel(g);
+}
+
+/* ---------------- cible sous le réticule ---------------- */
+function pickTarget(){
+  const O=OBJS[obj], k=ppm();
+  let best=null, bd=1e9;
+  for(const o of frameList){
+    if(found[o.sp.id])continue;
+    if(O.mag<o.sp.mag)continue;
+    const blur=Math.abs(o.z-zf)/O.dof;
+    if(blur>0.70)continue;
+    const dx=(o.proc?(o.x-stX):wrapD(o.x-stX))*k, dy=(o.proc?(o.y-stY):wrapD(o.y-stY))*k;
+    const d=Math.hypot(dx,dy);
+    if(d>SC.r*0.62)continue;
+    if(d<bd){bd=d;best=o;}
+  }
+  target=best;
+}
+
+/* ---------------- interaction ---------------- */
+let drag=null;
+function local(e){
+  const r=cvEl.getBoundingClientRect();
+  return {x:(e.clientX-r.left)/r.width*CW, y:(e.clientY-r.top)/r.height*CH};
+}
+cvEl.addEventListener("pointerdown",e=>{
+  if(phase!=="scope")return;
+  e.preventDefault();
+  try{cvEl.setPointerCapture(e.pointerId);}catch(_){}
+  const p=local(e);
+  for(const K of KNOBS){
+    if(p.x>=K.x-2&&p.x<=K.x+K.w+2&&p.y>=K.y-2&&p.y<=K.y+K.h+2){
+      drag={K, lx:p.x, ly:p.y}; return;
+    }
+  }
+  const dx=p.x-SC.cx, dy=p.y-SC.cy;
+  if(dx*dx+dy*dy<=SC.r2) identify();
+});
+cvEl.addEventListener("pointermove",e=>{
+  if(!drag||phase!=="scope")return;
+  e.preventDefault();
+  const p=local(e);
+  const d=drag.K.axis==="h" ? p.x-drag.lx : p.y-drag.ly;
+  drag.lx=p.x; drag.ly=p.y;
+  knobPos[drag.K.id]+=d;
+  const fov=OBJS[obj].fov;
+  switch(drag.K.id){
+    case "x": stX=(stX+d*fov/90+WORLD)%WORLD; break;
+    case "y": stY=(stY+d*fov/90+WORLD)%WORLD; break;
+    case "macro": zf=clamp(zf+d*0.55, ZMIN-9, ZMAX+9); break;
+    case "micro": zf=clamp(zf+d*0.055, ZMIN-9, ZMAX+9); break;
+  }
+});
+["pointerup","pointercancel","pointerleave"].forEach(ev=>
+  cvEl.addEventListener(ev,()=>{drag=null;}));
+
+function identify(){
+  const O=OBJS[obj], k=ppm();
+  if(target){
+    found[target.sp.id]=true;
+    toast(T("t_new")+" — "+target.sp.nm[LANG],true);
+    updateCount();
+    target=null;
+    if(SPECS.every(s=>found[s.id])) setTimeout(()=>toast(T("t_done"),true),1200);
+    return;
+  }
+  // dire pourquoi ça n'a pas marché : c'est là qu'on apprend
+  let tooBlur=false, tooLow=false;
+  for(const o of frameList){
+    if(found[o.sp.id])continue;
+    const dx=(o.proc?(o.x-stX):wrapD(o.x-stX))*k, dy=(o.proc?(o.y-stY):wrapD(o.y-stY))*k;
+    if(Math.hypot(dx,dy)>SC.r*0.62)continue;
+    if(O.mag<o.sp.mag){tooLow=true;continue;}
+    if(Math.abs(o.z-zf)/O.dof>0.70){tooBlur=true;}
+  }
+  toast(tooBlur?T("t_blur"):tooLow?T("t_mag"):T("t_none"),false);
+}
+
+/* ---------------- toast ---------------- */
+let tt=null; const toastEl=document.getElementById("toast");
+function toast(m,good){
+  toastEl.textContent=m;
+  toastEl.className="toast show"+(good?" good":"");
+  clearTimeout(tt);
+  tt=setTimeout(()=>toastEl.classList.remove("show"),1600);
+}
+
+/* ---------------- HUD ---------------- */
+function updateCount(){
+  const n=SPECS.length?SPECS.filter(s=>found[s.id]).length:0;
+  document.getElementById("foundVal").textContent=n+"/"+(SPECS.length||0);
+}
+function setObj(i){
+  obj=i;
+  document.querySelectorAll(".objs button").forEach((b,j)=>b.classList.toggle("on",j===i));
+}
+document.querySelectorAll(".objs button").forEach(b=>{
+  b.onclick=()=>{ if(phase==="scope")setObj(+b.dataset.obj); };
+});
+
+/* ---------------- écrans ---------------- */
+const ovMenu=document.getElementById("ovMenu"), ovList=document.getElementById("ovList");
+function show(el){ [ovMenu,ovList].forEach(o=>o.classList.add("hidden")); if(el)el.classList.remove("hidden"); }
+
+function buildMenu(){
+  const g=document.getElementById("sampleGrid"); g.innerHTML="";
+  for(const key of ["milk","swab","water"]){
+    const b=document.createElement("button");
+    b.className="chip";
+    b.innerHTML=`<div class="n">${T(SAMPLES[key].key)}</div>
+      <div class="d">${T(SAMPLES[key].key+"_d")}<br>${SAMPLES[key].sp.length} ${LANG==="fr"?"éléments à identifier":"items to identify"}</div>`;
+    b.onclick=()=>{ buildWorld(key); phase="scope"; updateCount(); show(null); };
+    g.appendChild(b);
+  }
+}
+
+function thumb(sp,isFound){
+  const c=document.createElement("canvas");
+  c.width=34; c.height=30;
+  const g=c.getContext("2d");
+  g.imageSmoothingEnabled=false;
+  g.fillStyle=isFound?C.bg:"#0d141c"; g.fillRect(0,0,34,30);
+  const saveC=SC.cx, saveY=SC.cy, saveR=SC.r2;
+  SC.cx=17; SC.cy=15; SC.r2=1e6;               // pas de découpe pour la vignette
+  BLUR=0; EXP=0;
+  const big=Math.max(sp.L,sp.W);
+  const k=Math.min(26/big, 9);
+  drawOrg(g,{sp,s:1,ang:0.45,tilt:0,ph:1.1,seed:7,z:0,x:0,y:0},17,15,k,!isFound);
+  SC.cx=saveC; SC.cy=saveY; SC.r2=saveR;
+  return c;
+}
+function buildList(sel){
+  document.getElementById("lsTitle").textContent=T(SAMPLES[SAMPLE].key).toUpperCase();
+  document.getElementById("lsSub").textContent=T("ls_sub");
+  const grid=document.getElementById("lsGrid"); grid.innerHTML="";
+  SPECS.forEach(sp=>{
+    const f=!!found[sp.id];
+    const d=document.createElement("div");
+    d.className="item "+(f?"found":"miss");
+    d.appendChild(thumb(sp,f));
+    const nm=document.createElement("div");
+    nm.className="nm";
+    nm.textContent=f?sp.nm[LANG]:T("unknown");
+    d.appendChild(nm);
+    if(f)d.onclick=()=>buildList(sp.id);
+    grid.appendChild(d);
+  });
+  const det=document.getElementById("lsDet");
+  const sp=SPECS.find(s=>s.id===sel&&found[s.id]);
+  det.innerHTML = sp ? `<div class="det"><h4>${sp.nm[LANG]}</h4>
+      <div class="sz">${T("lbl_size")} ${sp.sz} · ${T("lbl_obj")} ${OBJS.find(o=>o.mag===sp.mag).lbl}</div>
+      <p>${sp.info[LANG]}</p></div>`
+    : (SPECS.every(s=>found[s.id]) ? `<div class="det"><p>${T("done_msg")}</p></div>` : "");
+}
+
+document.getElementById("listBtn").onclick=()=>{
+  if(phase==="menu")return;
+  if(phase==="list"){ phase="scope"; show(null); }
+  else { phase="list"; buildList(null); show(ovList); }
+};
+document.getElementById("lsClose").onclick=()=>{ phase="scope"; show(null); };
+document.getElementById("lsMenu").onclick=()=>{ phase="menu"; buildMenu(); show(ovMenu); };
+document.getElementById("langBtn").onclick=()=>{
+  LANG=LANG==="fr"?"en":"fr";
+  try{localStorage.setItem("mbg_lang",LANG);}catch(e){}
+  document.getElementById("langBtn").textContent=LANG==="fr"?"EN":"FR";
+  document.documentElement.lang=LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{el.textContent=T(el.dataset.i18n);});
+  buildMenu();
+  if(phase==="list")buildList(null);
+};
+
+/* init */
+document.getElementById("langBtn").textContent=LANG==="fr"?"EN":"FR";
+document.documentElement.lang=LANG;
+document.querySelectorAll("[data-i18n]").forEach(el=>{el.textContent=T(el.dataset.i18n);});
+buildMenu(); show(ovMenu); updateCount();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
